@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="520" viewBox="0 0 1600 520" role="img" aria-labelledby="title desc">
+  <title id="title">사제의 길 출시와 구현 범위</title>
+  <desc id="desc">출시 버전 1.1.1, Android Target SDK 35, 지원 언어 3개, 인앱 결제 상품 7개, AAB 검증 3단계</desc>
+  <rect width="1600" height="520" rx="28" fill="#101a2d"/>
+  <text x="70" y="58" fill="#7ec9b1" font-family="Pretendard, Noto Sans KR, Segoe UI, sans-serif" font-size="20" font-weight="600" letter-spacing="3">RELEASE SNAPSHOT</text>
+
+  <g font-family="Pretendard, Noto Sans KR, Segoe UI, sans-serif">
+    <g transform="translate(70 90)">
+      <rect width="440" height="170" rx="20" fill="#18243a"/>
+      <rect width="8" height="170" rx="4" fill="#3e9d83"/>
+      <text x="42" y="106" fill="#f1f5ff" font-size="64" font-weight="700">1.1.1</text>
+      <text x="235" y="72" fill="#f1f5ff" font-size="28" font-weight="650">출시 버전</text>
+      <text x="235" y="108" fill="#9aa8bf" font-size="19">Android</text>
+    </g>
+
+    <g transform="translate(580 90)">
+      <rect width="440" height="170" rx="20" fill="#18243a"/>
+      <rect width="8" height="170" rx="4" fill="#3e9d83"/>
+      <text x="42" y="106" fill="#f1f5ff" font-size="66" font-weight="700">35</text>
+      <text x="170" y="72" fill="#f1f5ff" font-size="28" font-weight="650">Target SDK</text>
+      <text x="170" y="108" fill="#9aa8bf" font-size="19">Google Play 배포 설정</text>
+    </g>
+
+    <g transform="translate(1090 90)">
+      <rect width="440" height="170" rx="20" fill="#18243a"/>
+      <rect width="8" height="170" rx="4" fill="#3e9d83"/>
+      <text x="42" y="106" fill="#f1f5ff" font-size="66" font-weight="700">3</text>
+      <text x="150" y="72" fill="#f1f5ff" font-size="28" font-weight="650">지원 언어</text>
+      <text x="150" y="108" fill="#9aa8bf" font-size="19">한국어 · 영어 · 일본어</text>
+    </g>
+
+    <g transform="translate(325 300)">
+      <rect width="440" height="170" rx="20" fill="#18243a"/>
+      <rect width="8" height="170" rx="4" fill="#337866"/>
+      <text x="42" y="106" fill="#f1f5ff" font-size="66" font-weight="700">7</text>
+      <text x="150" y="72" fill="#f1f5ff" font-size="28" font-weight="650">IAP 상품</text>
+      <text x="150" y="108" fill="#9aa8bf" font-size="19">소모성 6 · 광고 제거 1</text>
+    </g>
+
+    <g transform="translate(835 300)">
+      <rect width="440" height="170" rx="20" fill="#18243a"/>
+      <rect width="8" height="170" rx="4" fill="#337866"/>
+      <text x="42" y="106" fill="#f1f5ff" font-size="66" font-weight="700">3</text>
+      <text x="150" y="72" fill="#f1f5ff" font-size="28" font-weight="650">AAB 검증</text>
+      <text x="150" y="108" fill="#9aa8bf" font-size="19">구조 · 서명 · 16KB 정렬</text>
+    </g>
+  </g>
+</svg>
