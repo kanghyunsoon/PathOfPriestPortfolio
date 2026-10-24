@@ -136,14 +136,22 @@ public class Data_Manager
     public Character_Scriptable Get_Rarity_Character(Rarity rarity)
     {
         List<Character_Scriptable> holder = new List<Character_Scriptable>();
-        foreach(var data in m_Data_Character)
+        while (true)
         {
-            if(data.Value.Data.m_Rarity ==rarity && data.Value.Data.Main_Character == false)
+            foreach (var data in m_Data_Character)
             {
-                holder.Add(data.Value.Data);
+                if (data.Value.Data.m_Rarity == rarity && data.Value.Data.Main_Character == false)
+                {
+                    holder.Add(data.Value.Data);
+                }
             }
+
+            // 해당 등급의 영웅이 없으면 유물 뽑기와 같이 한 단계 높은 등급에서 찾는다.
+            if (holder.Count > 0 || rarity == Rarity.Legendary) break;
+            rarity = GetNextAvailableRarity(rarity);
         }
-        return holder[UnityEngine.Random.Range(0, holder.Count)];
+
+        return holder.Count > 0 ? holder[UnityEngine.Random.Range(0, holder.Count)] : null;
     }
 
     public Item_Scriptable Get_Rarity_Relic(Rarity rarity)
