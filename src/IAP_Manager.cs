@@ -121,7 +121,8 @@ public class IAP_Manager : IDetailedStoreListener
 
     public void Purchase(string productId)
     {
-        Product product = storeController.products.WithID(productId);
+        // 결제 초기화에 실패했거나 아직 끝나지 않았으면 storeController가 없다.
+        Product product = GetProduct(productId);
         if (product != null && product.availableToPurchase)
         {
             storeController.InitiatePurchase(product);
@@ -156,7 +157,7 @@ public class IAP_Manager : IDetailedStoreListener
 
     public Product GetProduct(string _productId)
     {
-        return storeController.products.WithID(_productId);
+        return storeController != null ? storeController.products.WithID(_productId) : null;
     }
 
 }

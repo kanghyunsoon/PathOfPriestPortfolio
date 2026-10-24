@@ -95,6 +95,11 @@ public class ADS_Manager
 
         Debug.Log("보상형 광고 로드! : " + ad.GetResponseInfo());
 
+        // 이전 광고 객체는 다시 쓰지 않으므로 해제한다.
+        if (_rewardedAd != null && _rewardedAd != ad)
+        {
+            _rewardedAd.Destroy();
+        }
         _rewardedAd = ad;
         RegisterEventHandler(_rewardedAd);
     }

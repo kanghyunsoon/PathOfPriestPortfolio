@@ -29,11 +29,13 @@ public class s_Elementalist_B : Skill_Base
             var magicCircle = SkillParticle.transform.GetChild(0).GetComponent<MagicCircle>();
             if (magicCircle == null) continue;
 
-            if(monsters.Length == 0)
+            Monster[] targets = monsters;
+            if (targets.Length == 0)
             {
-                yield break;
+                // 바로 끝내면 스킬 사용 상태가 남아 다음 스테이지까지 스킬을 다시 못 썼다.
+                break;
             }
-            Vector3 basePos = monsters[Random.Range(0, monsters.Length)].transform.position;
+            Vector3 basePos = targets[Random.Range(0, targets.Length)].transform.position;
             Vector3 offset = new Vector3(Random.insideUnitSphere.x * 2.0f, 0.0f, Random.insideUnitSphere.z * 2.0f);
             Vector3 spawnPos = basePos + offset;
 

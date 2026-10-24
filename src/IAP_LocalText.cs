@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Purchasing;
 using TMPro;
 
 public class IAP_LocalText : MonoBehaviour
@@ -13,17 +14,19 @@ public class IAP_LocalText : MonoBehaviour
 
     private void InitIAPText()
     {
+        // 결제 초기화 전에 상점을 열면 상품 정보가 없다. 예외 대신 가격 표시를 비워 둔다.
+        Product product = Base_Manager.IAP.GetProduct(productID);
+        string price = product != null
+            ? string.Format("{0} {1}", product.metadata.localizedPrice, product.metadata.isoCurrencyCode)
+            : "";
+
         if(GetComponent<TextMeshProUGUI>() != null)
         {
-            GetComponent<TextMeshProUGUI>().text = string.Format("{0} {1}",
-                Base_Manager.IAP.GetProduct(productID).metadata.localizedPrice, // 그리스 기준 2.69
-                Base_Manager.IAP.GetProduct(productID).metadata.isoCurrencyCode); // 그리스 기준(EUR)
+            GetComponent<TextMeshProUGUI>().text = price;
         }
         else
         {
-            GetComponent<Text>().text = string.Format("{0} {1}",
-                Base_Manager.IAP.GetProduct(productID).metadata.localizedPrice,
-                Base_Manager.IAP.GetProduct(productID).metadata.isoCurrencyCode);
+            GetComponent<Text>().text = price;
         }
     }
 }

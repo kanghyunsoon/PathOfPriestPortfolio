@@ -74,6 +74,7 @@ public partial class Firebase_Manager
             if (task.IsCanceled || task.IsFaulted)
             {
                 Debug.LogError("Anonymous Firebase sign-in failed: " + task.Exception);
+                Loading_Login_Button.Instance?.GetLoginInitialize();
                 return;
             }
 

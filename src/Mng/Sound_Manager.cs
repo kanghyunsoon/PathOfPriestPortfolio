@@ -12,8 +12,9 @@ public class Sound_Manager
 
     public void Init()
     {
-        BGMValue = PlayerPrefs.GetFloat("BGM");
-        VFXValue = PlayerPrefs.GetFloat("VFX");
+        // 첫 실행에는 저장값이 없다. 기본값 0을 쓰면 로그인 전까지 소리가 꺼진 상태로 시작했다.
+        BGMValue = PlayerPrefs.GetFloat("BGM", 1.0f);
+        VFXValue = PlayerPrefs.GetFloat("VFX", 1.0f);
 
         if (_soundRoot == null)
         {

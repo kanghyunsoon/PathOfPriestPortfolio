@@ -35,6 +35,13 @@ public class Object_Pool : IPool
 
     public void Return(GameObject obj, Action<GameObject> action = null)
     {
+        // 같은 오브젝트를 두 번 반납하면 큐에 두 번 들어가 한 오브젝트가 동시에 두 곳에서 쓰인다.
+        // (데미지 텍스트는 절전 모드 진입 때 한 번, 2초 타이머로 한 번 더 반납됐다)
+        if (pool.Contains(obj))
+        {
+            return;
+        }
+
         pool.Enqueue(obj);
         obj.transform.SetParent(parentTransform,false);
         obj.SetActive(false);

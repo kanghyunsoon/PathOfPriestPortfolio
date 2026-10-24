@@ -33,11 +33,14 @@ public class s_Babarian : Skill_Base
 
         for (int i = 0; i<5; i++)
         {
-            for (int j = 0; j < monsters.Count(); j++)
+            // monsters는 읽을 때마다 새 배열을 만든다. 처치로 목록이 줄어도 한 번 만든 배열로 순회한다.
+            Monster[] targets = monsters;
+            for (int j = 0; j < targets.Length; j++)
             {
-                if(Distance(transform.position,monsters[j].transform.position, 1.5f))
+                if (targets[j] == null) continue;
+                if(Distance(transform.position,targets[j].transform.position, 1.5f))
                 {
-                    monsters[j].GetDamage(SkillDamage(130.0f));
+                    targets[j].GetDamage(SkillDamage(130.0f));
                 }
             }
             yield return new WaitForSeconds(0.5f);
