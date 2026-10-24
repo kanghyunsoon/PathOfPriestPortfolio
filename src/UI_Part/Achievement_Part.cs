@@ -60,7 +60,6 @@ public class Achievement_Part : MonoBehaviour
                         CanCollect = false;
                         m_Text.text = "0 / " + data.Achievement_Characters[i].Level;
                         m_Text.color = Color.red;
-                        Lock.gameObject.SetActive(true);
                         continue;
                     }
 
@@ -69,13 +68,14 @@ public class Achievement_Part : MonoBehaviour
 
                     m_Text.text = string.Format("{0}/{1}", level + 1, data.Achievement_Characters[i].Level);
                     m_Text.color = LevelCompleted ? Color.green : Color.red;
-                    Lock.gameObject.SetActive(!LevelCompleted);
 
                     if (!LevelCompleted)
                         CanCollect = false;
 
                 }
-                ;
+
+                // 마지막 영웅 상태만 반영되던 잠금 표시를 전체 조건으로 정한다.
+                Lock.gameObject.SetActive(!CanCollect);
                 if(CanCollect)
                 {
                     CollectButton.onClick.AddListener(() => GetCollect(valueCount));
@@ -90,6 +90,8 @@ public class Achievement_Part : MonoBehaviour
 
     private void GetCollect(int valueCount)
     {
+        if (Data_Manager.m_Data.Achievement_B[valueCount]) return;
+
         Data_Manager.m_Data.Achievement_B[valueCount] = true;
         Base_Manager.Quest.LoadAchievement_Data();
         Base_Manager.Player.UpdateStats();

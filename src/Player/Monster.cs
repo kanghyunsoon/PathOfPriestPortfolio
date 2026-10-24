@@ -266,11 +266,8 @@ public class Monster : Character
 
     private void OnDestroy()
     {
-        // 혹시라도 구독이 남아있으면 해제
-        if (!isBoss)
-        {
-            Stage_Manager.m_DeadEvent -= OnDead;
-        }
+        // 파괴되는 쪽은 보스라서 조건 없이 해제한다. 일반 몬스터는 풀로 돌아가고 파괴되지 않는다.
+        Stage_Manager.m_DeadEvent -= OnDead;
     }
 
 }

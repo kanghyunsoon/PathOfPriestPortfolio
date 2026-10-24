@@ -92,12 +92,26 @@ public class UI_Gacha : UI_Base
     }
     public void OnClickReGacha(int value)
     {
-        int cost = value == 11 ? 3000 : (value == 1 ? 300 : 0);
-        if(value == 0 && Data_Manager.m_Data.Hero_ADS_Count >=3)
+        if (value == 0)
         {
-            Base_Canvas.instance.Get_Toast().Initialize(Local_Manager.local_Data["No_More_Ads"].Get_Data(), Color.red);
+            if (Data_Manager.m_Data.Hero_ADS_Count >= 3)
+            {
+                Base_Canvas.instance.Get_Toast().Initialize(Local_Manager.local_Data["No_More_Ads"].Get_Data(), Color.red);
+                return;
+            }
+
+            // 광고 소환은 광고를 끝까지 본 뒤에만 진행한다.
+            Base_Manager.ADS.ShowRewardedAds(() =>
+            {
+                if (this == null) return;
+
+                Data_Manager.m_Data.Hero_ADS_Count++;
+                StartReGacha(0);
+            });
             return;
         }
+
+        int cost = value == 11 ? 3000 : 300;
 
         if (Data_Manager.m_Data.Dia < cost)
         {
@@ -105,20 +119,17 @@ public class UI_Gacha : UI_Base
             return;
         }
 
-        if (cost > 0)
-        {
-            Data_Manager.m_Data.Dia -= cost;
-            Data_Manager.m_Data.UseDiamond += cost;
-        }
+        Data_Manager.m_Data.Dia -= cost;
+        Data_Manager.m_Data.UseDiamond += cost;
 
+        StartReGacha(value);
+    }
 
+    private void StartReGacha(int value)
+    {
         gachaTexture.Init();
         Initalize();
-        if (value == 0)
-        {
-            isAdsGacha = true;
-            Data_Manager.m_Data.Hero_ADS_Count++;
-        }
+        isAdsGacha = value == 0;
         GetGachaHero(value == 0 ? 1 : value);
     }
 
@@ -158,11 +169,17 @@ public class UI_Gacha : UI_Base
 
             // 뽑기 완료된 케릭터 데이터 결정
             Character_Scriptable data = Base_Manager.Data.Get_Rarity_Character(rarity);
+            if (data == null) continue;
+
+            // 연출 도중 창을 닫아도 결과가 남도록 연출 전에 지급하고 저장한다.
+            Base_Manager.Data.Character_Holder[data.name].Count++;
             gacha_list.Add(data);
         }
 
+        Base_Manager.Firebase.WriteData();
+
         // 캐릭터 생성 연출
-        for (int i = 1; i <= value; i++)
+        for (int i = 1; i <= gacha_list.Count; i++)
         {
             var data = gacha_list[i-1];
             var go = Instantiate(Hero_Panel, Horizontals[horizontalCheker]);
@@ -170,9 +187,6 @@ public class UI_Gacha : UI_Base
 
             Image character_Image = go.transform.GetChild(0).GetChild(0).GetComponent<Image>();
             go.gameObject.SetActive(true);
-
-            Base_Manager.Data.Character_Holder[data.name].Count++;
-
 
             go.sprite = Utils.Get_Atlas(data.m_Rarity.ToString());
             character_Image.sprite = Utils.Get_Atlas(data.name);
@@ -197,8 +211,6 @@ public class UI_Gacha : UI_Base
         {
             LockButtons[i].SetActive(false);
         }
-
-        Base_Manager.Firebase.WriteData();
     }
 
 

@@ -107,7 +107,7 @@ public class Player_Manager
         float MasteryBonus = Base_Manager.Data.ValueMastery(Status_Holder.HP);
         float achievementBonus = Base_Manager.Quest.Achievement_Status_Data.HP;
 
-        float totalBonus = smeltBonus + totalAtkBonus + achievementBonus + MasteryBonus;
+        float totalBonus = smeltBonus + totalHpBonus + achievementBonus + MasteryBonus;
 
         RealHP += RealHP * (totalBonus / 100.0f);
 
@@ -140,8 +140,8 @@ public class Player_Manager
                 value++;
             }
         }
-        float achievementBonus = Base_Manager.Quest.Achievement_Status_Data.ATK;
-        return (atk / value) * (1.0 + (totalAtkBonus + achievementBonus) / 100.0);
+        // Get_ATK에 영웅·유물·업적 보너스가 이미 들어 있으므로 다시 곱하지 않는다.
+        return atk / value;
     }
 
     public double Main_HP()
@@ -158,8 +158,7 @@ public class Player_Manager
                 value++;
             }
         }
-        float achievementBonus = Base_Manager.Quest.Achievement_Status_Data.HP;
-        return (hp / value) * (1.0 + (totalHpBonus + achievementBonus) / 100.0);
+        return hp / value;
     }
 
     public float GoldDropPercentage()
@@ -216,13 +215,7 @@ public class Player_Manager
 
     public void UpdateStats()
     {
-        Main_ATK();
-        Main_HP();
-        GoldDropPercentage();
-        ItemDropPercentage();
-        CriticalPercentage();
-        CriticalDamage();
-        ATKSpeed();
+        RecalculateDefaultAbilities();
 
         for (int i = 0; i < Spawner.m_Players.Count; i++)
         {
@@ -230,90 +223,116 @@ public class Player_Manager
         }
     }
 
+    // 장착 상태에서 보너스를 다시 계산한다.
+    // 장착·해제 때마다 더하고 빼면 드래그 교체, 재접속, 유물 선택 같은 경로에서 값이 어긋난다.
+    private void RecalculateDefaultAbilities()
+    {
+        totalGoldBonus = 0.0f;
+        totalItemBonus = 0.0f;
+        totalCritBonus = 0.0f;
+        totalAtkBonus = 0.0f;
+        totalHpBonus = 0.0f;
+        totalAtkSpeedBonus = 0.0f;
+        totalCritDmgBonus = 0.0f;
+
+        foreach (var characterHolder in Base_Manager.Data.m_Set_Character)
+        {
+            if (characterHolder != null) AddCharacterAbility(characterHolder.Data);
+        }
+
+        foreach (var item in Base_Manager.Data.m_Set_Item)
+        {
+            if (item != null) AddRelicAbility(item);
+        }
+    }
+
+    // 장착 정보가 바뀐 뒤 호출한다. 보너스는 UpdateStats에서 장착 상태 기준으로 다시 계산한다.
     public void Set_Character_DefaultAbility(bool isAdding, Character_Scriptable characterHolder)
     {
-        if (characterHolder == null) return;
+        UpdateStats();
+    }
 
-        var character = characterHolder;
-        float modifier = isAdding ? 1.0f : -1.0f; // 추가될 때는 1.0f, 제거될 때는 -1.0f
-
-
+    private void AddCharacterAbility(Character_Scriptable character)
+    {
+        if (character == null) return;
 
         switch (character.m_CharacterName)
         {
             case "Babarian":
-                totalAtkBonus += 10.0f * modifier; // 공격력 +10%
+                totalAtkBonus += 10.0f; // 공격력 +10%
                 break;
 
             case "Berserker":
-                totalCritBonus += 15.0f * modifier;
-                totalHpBonus += 15.0f * modifier;
+                totalCritBonus += 15.0f;
+                totalHpBonus += 15.0f;
                 break;
 
             case "Hunter":
-                totalAtkSpeedBonus += 10.0f * modifier;
+                totalAtkSpeedBonus += 10.0f;
                 break;
 
             case "Spearman":
-                totalCritDmgBonus += 8.0f * modifier; // 치명타 데미지 +10%
+                totalCritDmgBonus += 8.0f; // 치명타 데미지 +8%
                 break;
 
             case "Elementalist_W":
-                totalGoldBonus += 30.0f * modifier; // 골드 드롭률 +30%
+                totalGoldBonus += 30.0f; // 골드 드롭률 +30%
                 break;
 
             case "Elementalist_B":
-                totalItemBonus += 15.0f * modifier;
+                totalItemBonus += 15.0f;
                 break;
 
             case "Paladin":
-                totalHpBonus += 25.0f * modifier;
+                totalHpBonus += 25.0f;
                 break;
 
             case "Rogue":
-                totalCritDmgBonus += 15.0f * modifier;
+                totalCritDmgBonus += 15.0f;
                 break;
 
             case "Elf_Archer":
-                totalAtkSpeedBonus += 15.0f * modifier;
+                totalAtkSpeedBonus += 15.0f;
                 break;
 
             case "Kunoichi":
-                totalAtkSpeedBonus += 10.0f * modifier;
-                totalAtkBonus += 13.0f * modifier;
+                totalAtkSpeedBonus += 10.0f;
+                totalAtkBonus += 13.0f;
                 break;
 
 
             default:
                 break;
         }
+    }
+
+    // 장착 정보가 바뀐 뒤 호출한다. 보너스는 UpdateStats에서 장착 상태 기준으로 다시 계산한다.
+    public void Set_Relic_DefaultAbility(bool isAdding, Item_Scriptable Item)
+    {
         UpdateStats();
     }
 
-    public void Set_Relic_DefaultAbility(bool isAdding, Item_Scriptable Item)
+    private void AddRelicAbility(Item_Scriptable Item)
     {
         if (Item == null) return;
-
-        float modifier = isAdding ? 1.0f : -1.0f; // 추가될 때는 1.0f, 제거될 때는 -1.0f
 
         switch (Item.Item_Name)
         {
             case "Axe":
-                totalAtkBonus += 15.0f * modifier;
+                totalAtkBonus += 15.0f;
                 break;
 
             case "Mana":
-                totalHpBonus += 10.0f * modifier;
+                totalHpBonus += 10.0f;
                 break;
 
             case "Dice":
-                totalItemBonus += 15.0f * modifier;
+                totalItemBonus += 15.0f;
                 break;
 
             default:
                 break;
         }
-        UpdateStats();
     }
 
 }

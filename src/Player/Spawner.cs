@@ -36,8 +36,9 @@ public class Spawner : MonoBehaviour
         Initialize();
         for (int i =0; i<Maps.Length; i++) Maps[i].SetActive(false);
 
-        m_Count = int.Parse(CSV_Importer.Spawn_Design[Data_Manager.m_Data.Stage]["Spawn_Count"].ToString());
-        m_SpawnTime = float.Parse(CSV_Importer.Spawn_Design[Data_Manager.m_Data.Stage]["Spawn_Timer"].ToString());
+        var spawnRow = CSV_Importer.SpawnDesignRow(Data_Manager.m_Data.Stage);
+        m_Count = int.Parse(spawnRow["Spawn_Count"].ToString());
+        m_SpawnTime = float.Parse(spawnRow["Spawn_Timer"].ToString());
     }
 
     public void OnPlay()

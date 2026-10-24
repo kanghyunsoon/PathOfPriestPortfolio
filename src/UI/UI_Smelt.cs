@@ -60,26 +60,33 @@ public class UI_Smelt : UI_Base
 
     IEnumerator OpenCoroutine(int count)
     {
-        Base_Manager.Data.m_Data_Smelt.Clear();
-
+        // 재료는 이미 차감했으므로 결과를 먼저 확정하고 저장한다.
+        // 연출 도중 창을 닫으면 코루틴이 멈춰 일부 옵션만 남던 문제를 막는다.
+        List<Smelt_Holder> results = new List<Smelt_Holder>();
         for (int i = 0; i < count; i++)
         {
             Status_Holder status = (Status_Holder)Random.Range(0, 8);
             int value = CountPercentage();
             float valueCount = Random.Range(StatusHolder(status)[value].Min, StatusHolder(status)[value].Max);
 
-            GetSmelt_Panel(value, status, valueCount);
-
-            Base_Manager.Data.m_Data_Smelt.Add(new Smelt_Holder { holder = status, rarity = (Rarity)value,  Value = valueCount });
-
-            yield return new WaitForSeconds(0.05f);
-
+            results.Add(new Smelt_Holder { holder = status, rarity = (Rarity)value, Value = valueCount });
         }
+
+        Base_Manager.Data.m_Data_Smelt.Clear();
+        Base_Manager.Data.m_Data_Smelt.AddRange(results);
 
         for(int i =0; i< Spawner.m_Players.Count; i++)
         {
             Spawner.m_Players[i].Set_ATKHP();
         }
+        Base_Manager.Firebase.WriteData();
+
+        for (int i = 0; i < results.Count; i++)
+        {
+            GetSmelt_Panel((int)results[i].rarity, results[i].holder, results[i].Value);
+            yield return new WaitForSeconds(0.05f);
+        }
+
         Opening = false;
     }
 

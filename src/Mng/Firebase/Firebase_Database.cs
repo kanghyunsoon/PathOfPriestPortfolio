@@ -511,6 +511,8 @@ public partial class Firebase_Manager
                         }
                     }
                 }
+
+                Base_Manager.instance.InitializeDefaultAbilities();
             }
             else
             {
@@ -548,7 +550,10 @@ public partial class Firebase_Manager
                     Debug.Log("SET_ITEM 데이터가 존재하지 않습니다.");
                 }
 
+                // 다시 불러올 때 유물 효과가 중복으로 연결되지 않게 비우고 연결한다.
+                Delegate_Holder.ClearEvent();
                 Relic_Manager.instance.Initialize();
+                Base_Manager.instance.InitializeDefaultAbilities();
             }
             else
             {

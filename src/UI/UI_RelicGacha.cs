@@ -93,13 +93,26 @@ public class UI_RelicGacha : UI_Base
 
     public void OnClickRelicReGacha(int value)
     {
-        int cost = value == 11 ? 3000 : (value == 1 ? 300 : 0);
-
-        if (value == 0 && Data_Manager.m_Data.Relic_ADS_Count >= 3)
+        if (value == 0)
         {
-            Base_Canvas.instance.Get_Toast().Initialize(Local_Manager.local_Data["No_More_Ads"].Get_Data(), Color.red);
+            if (Data_Manager.m_Data.Relic_ADS_Count >= 3)
+            {
+                Base_Canvas.instance.Get_Toast().Initialize(Local_Manager.local_Data["No_More_Ads"].Get_Data(), Color.red);
+                return;
+            }
+
+            // 광고 소환은 광고를 끝까지 본 뒤에만 진행한다.
+            Base_Manager.ADS.ShowRewardedAds(() =>
+            {
+                if (this == null) return;
+
+                Data_Manager.m_Data.Relic_ADS_Count++;
+                StartReGacha(0);
+            });
             return;
         }
+
+        int cost = value == 11 ? 3000 : 300;
 
         if (Data_Manager.m_Data.Dia < cost)
         {
@@ -107,13 +120,14 @@ public class UI_RelicGacha : UI_Base
             return;
         }
 
-        if (cost > 0)
-        {
-            Data_Manager.m_Data.Dia -= cost;
-            Data_Manager.m_Data.UseDiamond += cost;
-        }
+        Data_Manager.m_Data.Dia -= cost;
+        Data_Manager.m_Data.UseDiamond += cost;
 
+        StartReGacha(value);
+    }
 
+    private void StartReGacha(int value)
+    {
         foreach (var obj in Garvage2)
         {
             Destroy(obj.gameObject);
@@ -121,11 +135,7 @@ public class UI_RelicGacha : UI_Base
         Garvage2.Clear();
 
         Initalize();
-        if (value == 0)
-        {
-            isAdsRelicGacha = true;
-            Data_Manager.m_Data.Relic_ADS_Count++;
-        }
+        isAdsRelicGacha = value == 0;
         GetGachaRelic(value == 0 ? 1 : value);
     }
 
@@ -166,11 +176,17 @@ public class UI_RelicGacha : UI_Base
 
             // 뽑기 완료된 아이템 데이터 결정
             Item_Scriptable data = Base_Manager.Data.Get_Rarity_Relic(rarity);
+            if (data == null) continue;
+
+            // 연출 도중 창을 닫아도 결과가 남도록 연출 전에 지급하고 저장한다.
+            Base_Manager.Data.Item_Holder[data.name].Count++;
             gacha_list.Add(data);
         }
 
+        Base_Manager.Firebase.WriteData();
+
         // 생성 연출
-        for (int i = 1; i <= value; i++)
+        for (int i = 1; i <= gacha_list.Count; i++)
         {
             var data = gacha_list[i - 1];
             var go = Instantiate(Relic_Panel, Horizontals[horizontalCheker]);
@@ -178,17 +194,14 @@ public class UI_RelicGacha : UI_Base
             Garvage.Add(go.gameObject);
             Image Relic_Image = go.transform.GetChild(0).GetChild(0).GetComponent<Image>();
 
-
-            Base_Manager.Data.Item_Holder[data.name].Count++;
-
-            //////
             go.sprite = Utils.Get_Atlas(data.rarity.ToString());
             Relic_Image.sprite = Utils.Get_Atlas(data.name);
             Relic_Image.SetNativeSize();
 
             go.gameObject.SetActive(true);
             Animator relicAnimator = go.GetComponentInChildren<Animator>();
-            relicAnimator.SetTrigger((int)data.rarity < 5 ? "Default" : "Rare");
+            // 영웅 뽑기와 같이 Hero 등급부터 희귀 연출을 쓴다. Rarity 최댓값이 4라서 5와 비교하면 항상 기본 연출이었다.
+            relicAnimator.SetTrigger((int)data.rarity < 3 ? "Default" : "Rare");
 
             if (i % Limit == 0)
             {
@@ -201,15 +214,13 @@ public class UI_RelicGacha : UI_Base
                 case 1:  Get_Relic(1, 0, data); break;
             }
 
-            yield return new WaitForSecondsRealtime((int)data.rarity < 5 ? 0.2f : 0.5f);
+            yield return new WaitForSecondsRealtime((int)data.rarity < 3 ? 0.2f : 0.5f);
         }
 
         for (int i = 0; i < LockButtons.Length; i++)
         {
             LockButtons[i].SetActive(false);
         }
-
-        Base_Manager.Firebase.WriteData();
     }
 
     public void Get_Relic(int GachaValue, int value, Item_Scriptable data)

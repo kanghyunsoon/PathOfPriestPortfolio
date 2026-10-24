@@ -5,7 +5,7 @@ public class UI_DailyQuest : UI_Base
 {
     public Quest_Part QuestPanel;
     public Transform Content;
-    List<Transform> InitPanels = new List<Transform>();
+    List<Quest_Part> InitPanels = new List<Quest_Part>();
     List<GameObject> Garvage = new List<GameObject>();
 
 
@@ -24,15 +24,16 @@ public class UI_DailyQuest : UI_Base
             var go = Instantiate(QuestPanel, Content);
             go.gameObject.SetActive(true);
             go.Init(quest, this);
-            InitPanels.Add(go.transform);
+            InitPanels.Add(go);
             Garvage.Add(go.gameObject);
         }
 
+        // 받은 퀘스트는 아래로 보낸다. 목록 순서와 저장 순서가 달라 퀘스트별 저장 위치로 확인한다.
         for (int i = 0; i < InitPanels.Count; i++)
         {
-            if (Data_Manager.m_Data.DailyQuests[i] == true)
+            if (InitPanels[i].IsCollected)
             {
-                InitPanels[i].SetAsLastSibling();
+                InitPanels[i].transform.SetAsLastSibling();
             }
         }
         return base.Init();

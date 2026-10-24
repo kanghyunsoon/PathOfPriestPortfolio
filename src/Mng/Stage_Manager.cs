@@ -38,7 +38,7 @@ public class Stage_Manager
         switch(state)
         {
             case Stage_State.Ready:
-                MaxCount = int.Parse(CSV_Importer.Spawn_Design[Data_Manager.m_Data.Stage]["MaxCount"].ToString());
+                MaxCount = int.Parse(CSV_Importer.SpawnDesignRow(Data_Manager.m_Data.Stage)["MaxCount"].ToString());
 
                 m_ReadyEvent?.Invoke();
                 Base_Manager.instance.Coroutine_Action(() => State_Change(Stage_State.Play), inPlaytime);

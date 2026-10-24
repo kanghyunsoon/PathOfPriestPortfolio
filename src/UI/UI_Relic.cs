@@ -244,8 +244,6 @@ public class UI_Relic : UI_Base
 
             s_Part.LockOBJ.SetActive(false);
             s_Part.GetComponent<Outline>().enabled = true;
-
-            Base_Manager.Player.Set_Relic_DefaultAbility(true, m_Items);
         }
 
     }
