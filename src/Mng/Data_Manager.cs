@@ -94,8 +94,10 @@ public class Data
     public bool[] Achievement_B = new bool[11];
 
     // 해금한 마스터리 Id. 예전에는 기기의 PlayerPrefs에만 있어 기기를 바꾸면 해금 상태가 사라졌다.
-    // null이면 이 필드가 없던 저장 데이터라서 기기에 남은 기록을 한 번 옮긴다.
     public List<int> Mastery_Unlocked;
+    // 기기에 남은 해금 기록을 서버 데이터로 옮겼는지 여부. 필드가 없던 저장 데이터는 false로 읽힌다.
+    // (JsonUtility는 없는 리스트를 빈 리스트로 만들 수 있어 목록의 null 여부로는 판단하지 않는다)
+    public bool Mastery_Migrated;
 }
 
 public class Data_Manager
@@ -141,16 +143,17 @@ public class Data_Manager
 
     private void MigrateMasteryUnlocks()
     {
-        if (m_Data.Mastery_Unlocked != null) return;
+        if (m_Data.Mastery_Unlocked == null) m_Data.Mastery_Unlocked = new List<int>();
+        if (m_Data.Mastery_Migrated) return;
 
-        m_Data.Mastery_Unlocked = new List<int>();
         for (int id = 0; id < LegacyMasteryIdLimit; id++)
         {
-            if (PlayerPrefs.GetInt($"mastery_{id}", 0) == 1)
+            if (PlayerPrefs.GetInt($"mastery_{id}", 0) == 1 && !m_Data.Mastery_Unlocked.Contains(id))
             {
                 m_Data.Mastery_Unlocked.Add(id);
             }
         }
+        m_Data.Mastery_Migrated = true;
     }
 
     public static bool IsMasteryUnlocked(int id)

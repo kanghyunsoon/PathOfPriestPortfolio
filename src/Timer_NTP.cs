@@ -126,7 +126,6 @@ public class Time_Manager
         }
 
         // 서버 시간 없이 진행하면 기기 시계로 오프라인 보상·일일 초기화를 조작할 수 있다.
-        Base_Canvas.instance.Get_UI("#NetError");
-        Base_Manager.instance.Invoke("QuitGame", 3f);
+        Base_Manager.instance.ShowNetErrorAndQuit();
     }
 }

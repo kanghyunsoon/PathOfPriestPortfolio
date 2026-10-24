@@ -24,6 +24,11 @@ public partial class Firebase_Manager
     // 불러오기 전에 저장하면 기존 데이터를 빈 값으로 덮어쓴다.
     private bool isDataLoaded = false;
 
+    // 장착 영웅·유물은 본 데이터를 불러온 뒤 따로 불러온다.
+    // 불러오기 전이나 실패한 상태에서 저장하면 빈 장착 목록으로 서버 값을 덮어쓴다.
+    private bool isSetCharacterLoaded = false;
+    private bool isSetItemLoaded = false;
+
     public void WriteData()
     {
         if (!isDataLoaded || currentUser == null)
@@ -121,53 +126,59 @@ public partial class Firebase_Manager
 
 
         #region SET_CHARACTER
-        string[] SetCharacterNames = new string[Base_Manager.Data.m_Set_Character.Length];
-
-        for (int i = 0; i < Base_Manager.Data.m_Set_Character.Length; i++)
+        if (isSetCharacterLoaded)
         {
-            if (Base_Manager.Data.m_Set_Character[i] != null)
+            string[] SetCharacterNames = new string[Base_Manager.Data.m_Set_Character.Length];
+
+            for (int i = 0; i < Base_Manager.Data.m_Set_Character.Length; i++)
             {
-                SetCharacterNames[i] = Base_Manager.Data.m_Set_Character[i].Data.m_CharacterName;
+                if (Base_Manager.Data.m_Set_Character[i] != null)
+                {
+                    SetCharacterNames[i] = Base_Manager.Data.m_Set_Character[i].Data.m_CharacterName;
+                }
+                else
+                {
+                    SetCharacterNames[i] = ""; // null 방지용 빈 문자열
+                }
             }
-            else
+
+            string SetCharacter_json = JsonConvert.SerializeObject(SetCharacterNames);
+            reference.Child("USER").Child(currentUser.UserId).Child("SET_CHARACTER").SetRawJsonValueAsync(SetCharacter_json).ContinueWithOnMainThread(task =>
             {
-                SetCharacterNames[i] = ""; // null 방지용 빈 문자열
-            }
+                if (task.IsFaulted || task.IsCanceled)
+                {
+                    Debug.LogError("SetCharacter 저장 실패 : " + task.Exception.ToString());
+                }
+            });
         }
-
-        string SetCharacter_json = JsonConvert.SerializeObject(SetCharacterNames);
-        reference.Child("USER").Child(currentUser.UserId).Child("SET_CHARACTER").SetRawJsonValueAsync(SetCharacter_json).ContinueWithOnMainThread(task =>
-        {
-            if (task.IsFaulted || task.IsCanceled)
-            {
-                Debug.LogError("SetCharacter 저장 실패 : " + task.Exception.ToString());
-            }
-        });
         #endregion
 
         #region SET_ITEM
-        string[] SetItemNames = new string[Base_Manager.Data.m_Set_Item.Length];
-
-        for (int i = 0; i < Base_Manager.Data.m_Set_Item.Length; i++)
+        if (isSetItemLoaded)
         {
-            if (Base_Manager.Data.m_Set_Item[i] != null)
+            string[] SetItemNames = new string[Base_Manager.Data.m_Set_Item.Length];
+
+            for (int i = 0; i < Base_Manager.Data.m_Set_Item.Length; i++)
             {
-                SetItemNames[i] = Base_Manager.Data.m_Set_Item[i].name;
+                if (Base_Manager.Data.m_Set_Item[i] != null)
+                {
+                    SetItemNames[i] = Base_Manager.Data.m_Set_Item[i].name;
+                }
+                else
+                {
+                    SetItemNames[i] = ""; // null 방지용
+                }
             }
-            else
+
+            string SetItem_json = JsonConvert.SerializeObject(SetItemNames);
+            reference.Child("USER").Child(currentUser.UserId).Child("SET_ITEM").SetRawJsonValueAsync(SetItem_json).ContinueWithOnMainThread(task =>
             {
-                SetItemNames[i] = ""; // null 방지용
-            }
+                if (task.IsFaulted || task.IsCanceled)
+                {
+                    Debug.LogError("SetItem 저장 실패 : " + task.Exception.ToString());
+                }
+            });
         }
-
-        string SetItem_json = JsonConvert.SerializeObject(SetItemNames);
-        reference.Child("USER").Child(currentUser.UserId).Child("SET_ITEM").SetRawJsonValueAsync(SetItem_json).ContinueWithOnMainThread(task =>
-        {
-            if (task.IsFaulted || task.IsCanceled)
-            {
-                Debug.LogError("SetItem 저장 실패 : " + task.Exception.ToString());
-            }
-        });
         #endregion
 
         #region DEBUFF_CHARACTER
@@ -202,6 +213,8 @@ public partial class Firebase_Manager
         Debug.Log(" [ReadData] 호출됨 / 유저 ID: " + currentUser.UserId);
 
         isDataLoaded = false;
+        isSetCharacterLoaded = false;
+        isSetItemLoaded = false;
 
         // DATA, CHARACTER, ITEM, SMELT, MASTERY
         const int subLoadCount = 5;
@@ -218,8 +231,7 @@ public partial class Firebase_Manager
                 {
                     // 일부만 불러온 채로 시작하면 다음 자동 저장이 서버 데이터를 덮어쓴다.
                     Debug.LogError("[TryFinalizeLoad] 불러오기에 실패한 데이터가 있어 게임을 시작하지 않습니다.");
-                    Base_Canvas.instance.Get_UI("#NetError");
-                    Base_Manager.instance.Invoke("QuitGame", 3f);
+                    Base_Manager.instance.ShowNetErrorAndQuit();
                     return;
                 }
 
@@ -512,11 +524,13 @@ public partial class Firebase_Manager
                     }
                 }
 
+                isSetCharacterLoaded = true;
                 Base_Manager.instance.InitializeDefaultAbilities();
             }
             else
             {
-                Debug.LogError("SET_CHARACTER 불러오기 실패 : " + task.Exception.ToString());
+                // 장착 정보 없이 계속하면 저장 때 빈 목록이 서버 값을 덮어쓰므로, 이번 접속에서는 장착 정보를 저장하지 않는다.
+                Debug.LogError("SET_CHARACTER 불러오기 실패. 이번 접속에서는 장착 영웅을 저장하지 않습니다 : " + task.Exception.ToString());
             }
         });
 
@@ -553,11 +567,12 @@ public partial class Firebase_Manager
                 // 다시 불러올 때 유물 효과가 중복으로 연결되지 않게 비우고 연결한다.
                 Delegate_Holder.ClearEvent();
                 Relic_Manager.instance.Initialize();
+                isSetItemLoaded = true;
                 Base_Manager.instance.InitializeDefaultAbilities();
             }
             else
             {
-                Debug.LogError("SET_ITEM 불러오기 실패 : " + task.Exception.ToString());
+                Debug.LogError("SET_ITEM 불러오기 실패. 이번 접속에서는 장착 유물을 저장하지 않습니다 : " + task.Exception.ToString());
             }
         });
     }

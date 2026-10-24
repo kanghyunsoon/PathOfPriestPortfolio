@@ -204,4 +204,15 @@ public class Base_Manager : MonoBehaviour
     Application.Quit();
 #endif
     }
+
+    // 서버 시간이나 저장 데이터를 받지 못하면 안내 후 종료한다.
+    // 로딩 화면에서는 Main_UI가 없어 Get_UI가 예외를 내고 종료까지 실행되지 않았으므로 팝업만 직접 띄운다.
+    public void ShowNetErrorAndQuit()
+    {
+        if (Base_Canvas.instance != null)
+        {
+            Base_Canvas.instance.GetPopupUI("#NetError");
+        }
+        Invoke("QuitGame", 3f);
+    }
 }
