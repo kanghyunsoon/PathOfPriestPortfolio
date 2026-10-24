@@ -76,20 +76,33 @@ public class Main_Quest : MonoBehaviour
     public void GetQuestButton()
     {
         if (!Reward) return;
+        Reward = false;
 
         Base_Manager.Pool.Pooling_OBJ("COIN_PARENT").Get((value) =>
         {
             value.GetComponent<COIN_PARENT>().Init(Camera.main.ScreenToWorldPoint(transform.position), false, Coin_type.Dia, Convert.ToInt32(Quest["Reward"]));
         });
 
-        Counting_Reset(m_State);
-
         Data_Manager.m_Data.Quest_Count++;
         //Main_UI.instance.TextCheck();
         NextQuest();
+
+        // 다음 퀘스트는 지금 카운터 값부터 센다.
+        // 예전에는 카운터 자체를 0으로 만들어 소환 레벨(소환 확률)과 진행 스테이지까지 초기화했다.
+        monster_Index = 0;
+        if (!isQuestFinished)
+        {
+            Data_Manager.m_Data.Quest_StartValue = RawCount(m_State);
+        }
     }
 
     private int Counting(Quest_Type type)
+    {
+        if (type == Quest_Type.Monster) return monster_Index;
+        return Mathf.Max(0, RawCount(type) - Data_Manager.m_Data.Quest_StartValue);
+    }
+
+    private int RawCount(Quest_Type type)
     {
         switch(type)
         {
@@ -117,34 +130,6 @@ public class Main_Quest : MonoBehaviour
             case Quest_Type.Artifact: return Local_Manager.local_Data["questArtifact"].Get_Data();
         }
         return "";
-    }
-
-    private void Counting_Reset(Quest_Type type)
-    {
-        switch (type)
-        {
-            case Quest_Type.Monster:
-                monster_Index = 0;
-                break;
-            case Quest_Type.Gold:
-                Data_Manager.m_Data.GoldDungeon_Count = 0;
-                break;
-            case Quest_Type.Dia:
-                Data_Manager.m_Data.DiaDungeon_Count = 0;
-                break;
-            case Quest_Type.Upgrade:
-                Data_Manager.m_Data.UpgradeCount = 0;
-                break;
-            case Quest_Type.Hero:
-                Data_Manager.m_Data.Hero_Summon_Count = 0;
-                break;
-            case Quest_Type.Stage:
-                Data_Manager.m_Data.Stage = 0;
-                break;
-            case Quest_Type.Artifact:
-                Data_Manager.m_Data.Relic_Summon_Count = 0;
-                break;
-        }
     }
 
 }
