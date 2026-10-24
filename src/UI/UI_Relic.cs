@@ -65,6 +65,9 @@ public class UI_Relic : UI_Base
         bool Can = false;
         foreach (var data in Base_Manager.Data.m_Data_Item)
         {
+            // 일괄 강화는 장비 유물만 올린다. 재료 아이템까지 세면 올릴 유물이 없는데도 강화 창이 열렸다.
+            if (data.Value.Data.type != ItemType.Equipment) continue;
+
             int value = (Base_Manager.Data.Item_Holder[data.Value.Data.name].Level + 1) * 5;
 
             if (Base_Manager.Data.Item_Holder[data.Value.Data.name].Count >= value)
