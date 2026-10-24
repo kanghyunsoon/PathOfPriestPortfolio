@@ -98,6 +98,8 @@ public class Quest_Manager
 
     public void LoadQuests()
     {
+        // Init은 데이터를 불러올 때마다 호출되므로 이전 목록을 비우고 다시 만든다.
+        activeQuests.Clear();
         questData = new List<Dictionary<string, object>>(CSV_Importer.DailyQuest);
         for(int i =0; i< questData.Count; i++)
         {

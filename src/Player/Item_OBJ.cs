@@ -44,6 +44,9 @@ public class Item_OBJ : MonoBehaviour
 
         m_Loot.Play();
 
+        // 이미 지급한 아이템이 절전 모드 진입 때 한 번 더 지급되지 않게 한다.
+        UI_SavingMode.m_OnSaving -= OnSave;
+
         Main_UI.instance.GetItem(m_Item);
         Base_Manager.Inventory.GetItem(m_Item);
 

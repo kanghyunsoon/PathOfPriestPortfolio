@@ -98,11 +98,7 @@ public class UI_SavingMode : UI_Base
         if(m_SaveItem.ContainsKey(item.name))
         {
             m_SaveItem[item.name].holder.Count++;
-            foreach (var RealItem in m_SaveItem)
-            {
-                m_Parts[item.name].Init(item.name, RealItem.Value.holder);
-            }
-
+            m_Parts[item.name].Init(item.name, m_SaveItem[item.name].holder);
             return;
         }
         Item_Holder items = new Item_Holder { Data = item, holder = new Holder() };
@@ -110,13 +106,6 @@ public class UI_SavingMode : UI_Base
         m_SaveItem.Add(item.name, items);
         var go = Instantiate(item_Part, Content);
         m_Parts.Add(item.name, go);
-
-        foreach (var RealItem in m_SaveItem)
-        {
-            go.Init(item.name, RealItem.Value.holder);
-        }
-
-
-
+        go.Init(item.name, items.holder);
     }
 }

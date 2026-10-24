@@ -162,10 +162,14 @@ public partial class Firebase_Manager
         FirebaseUser userToDelete = currentUser;
         string userId = userToDelete.UserId;
 
+        // 삭제하는 동안 자동 저장이 데이터를 다시 만들지 않게 막는다. 실패하면 저장을 다시 허용한다.
+        isDataLoaded = false;
+
         reference.Child("USER").Child(userId).RemoveValueAsync().ContinueWithOnMainThread(databaseTask =>
         {
             if (databaseTask.IsCanceled || databaseTask.IsFaulted)
             {
+                isDataLoaded = true;
                 completion?.Invoke(false, "Saved game data deletion failed: " + databaseTask.Exception);
                 return;
             }
@@ -174,6 +178,7 @@ public partial class Firebase_Manager
             {
                 if (authTask.IsCanceled || authTask.IsFaulted)
                 {
+                    isDataLoaded = true;
                     completion?.Invoke(false, "Firebase account deletion failed: " + authTask.Exception);
                     return;
                 }

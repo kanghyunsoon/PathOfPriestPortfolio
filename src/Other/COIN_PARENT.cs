@@ -23,11 +23,8 @@ public class COIN_PARENT : MonoBehaviour
 
     private void OnSave()
     {
-        Data_Manager.m_Data.Money += Utils.Data.stageData.MONEY();
-        if (Distance_Boolean_World(0.5f))
-        {
-            Base_Manager.Pool.m_pool_Dictionary["COIN_PARENT"].Return(this.gameObject);
-        }
+        // 재화는 Init에서 이미 지급했다. 절전 모드로 들어가면 연출만 정리한다.
+        Base_Manager.Pool.m_pool_Dictionary["COIN_PARENT"].Return(this.gameObject);
     }
 
     private void OnDisable()
@@ -37,25 +34,6 @@ public class COIN_PARENT : MonoBehaviour
 
     public void Init(Vector3 pos, bool offline, Coin_type type = Coin_type.Gold, int value = 0)
     {
-        UI_SavingMode.m_OnSaving += OnSave;
-
-        if (Base_Canvas.isSave) return;
-
-        target = pos;
-
-        transform.localScale = Vector3.one;
-
-        for (int i = 0; i < 5; i++)
-        {
-            childs[i].GetComponent<Image>().sprite = Utils.Get_Atlas(type.ToString());
-            childs[i].anchoredPosition = Vector2.zero;
-        }
-        transform.SetParent(Base_Canvas.instance.HOLDER_LAYER(0));
-
-        // 수정: World → Screen 좌표 변환 후, UI 위치로 설정
-        Vector3 screenPosition = cam.WorldToScreenPoint(pos);
-        transform.position = screenPosition;
-
         if (!offline)
         {
             switch(type)
@@ -75,6 +53,32 @@ public class COIN_PARENT : MonoBehaviour
                 case Coin_type.Dia: Data_Manager.m_Data.Dia +=value; break;
             }
         }
+
+        // 절전 모드에서는 연출 없이 지급만 하고 바로 반납한다.
+        // 예전에는 지급 전에 반환해서 골드가 빠졌고, 남은 코인이 다음 절전 모드 진입 때마다 골드를 다시 지급했다.
+        if (Base_Canvas.isSave)
+        {
+            Base_Manager.Pool.m_pool_Dictionary["COIN_PARENT"].Return(this.gameObject);
+            return;
+        }
+
+        UI_SavingMode.m_OnSaving += OnSave;
+
+        target = pos;
+
+        transform.localScale = Vector3.one;
+
+        for (int i = 0; i < 5; i++)
+        {
+            childs[i].GetComponent<Image>().sprite = Utils.Get_Atlas(type.ToString());
+            childs[i].anchoredPosition = Vector2.zero;
+        }
+        transform.SetParent(Base_Canvas.instance.HOLDER_LAYER(0));
+
+        // 수정: World → Screen 좌표 변환 후, UI 위치로 설정
+        Vector3 screenPosition = cam.WorldToScreenPoint(pos);
+        transform.position = screenPosition;
+
         StartCoroutine(Coin_Effect());
     }
 

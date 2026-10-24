@@ -25,6 +25,11 @@ public class Quest_Part : MonoBehaviour
 
     public void GetReward()
     {
+        if (IsCollected)
+        {
+            return;
+        }
+
         if(TypeCount(m_Quest.Type) < m_Quest.Goal)
         {
             Base_Canvas.instance.Get_Toast().Initialize(Local_Manager.local_Data["QuestNotCompleted"].Get_Data(), Color.red);
@@ -34,36 +39,42 @@ public class Quest_Part : MonoBehaviour
         Base_Canvas.instance.Get_UI("#Reward");
         Utils.UI_Holder.Peek().GetComponent<UI_Reward>().GetRewardInit(m_Quest.Reward, m_Quest.RewardCount);
 
-        switch (m_Quest.Type)
-        {
-            case DailyQuest_Type.DailyAttendance: Data_Manager.m_Data.DailyQuests[0] = true; break;
-            case DailyQuest_Type.LevelUp: Data_Manager.m_Data.DailyQuests[1] = true; break;
-            case DailyQuest_Type.Summon: Data_Manager.m_Data.DailyQuests[2] = true; break;
-            case DailyQuest_Type.Dungeon: Data_Manager.m_Data.DailyQuests[3] = true; break;
-            case DailyQuest_Type.ADS: Data_Manager.m_Data.DailyQuests[4] = true; break;
-            case DailyQuest_Type.UseDiamond: Data_Manager.m_Data.DailyQuests[5] = true; break;
-            case DailyQuest_Type.MonsterKill: Data_Manager.m_Data.DailyQuests[6] = true; break;
-            case DailyQuest_Type.StayTime: Data_Manager.m_Data.DailyQuests[7] = true; break;
-        }
+        int index = SaveIndex(m_Quest.Type);
+        if (index >= 0) Data_Manager.m_Data.DailyQuests[index] = true;
 
         parent.Init();
     }
 
-    private void CheckInit(DailyQuest_Type type)
+    public bool IsCollected
     {
-        bool GetCollected = false;
+        get
+        {
+            int index = m_Quest != null ? SaveIndex(m_Quest.Type) : -1;
+            return index >= 0 && Data_Manager.m_Data.DailyQuests[index];
+        }
+    }
+
+    // 저장 데이터의 DailyQuests 순서다. Dungeon과 ADS는 enum 순서와 반대로 저장되어 있어 그대로 유지한다.
+    private static int SaveIndex(DailyQuest_Type type)
+    {
         switch (type)
         {
-            case DailyQuest_Type.DailyAttendance: GetCollected = Data_Manager.m_Data.DailyQuests[0]; break;
-            case DailyQuest_Type.LevelUp: GetCollected = Data_Manager.m_Data.DailyQuests[1]; break;
-            case DailyQuest_Type.Summon: GetCollected = Data_Manager.m_Data.DailyQuests[2]; break;
-            case DailyQuest_Type.Dungeon: GetCollected = Data_Manager.m_Data.DailyQuests[3]; break;
-            case DailyQuest_Type.ADS: GetCollected = Data_Manager.m_Data.DailyQuests[4]; break;
-            case DailyQuest_Type.UseDiamond: GetCollected = Data_Manager.m_Data.DailyQuests[5]; break;
-            case DailyQuest_Type.MonsterKill: GetCollected = Data_Manager.m_Data.DailyQuests[6]; break;
-            case DailyQuest_Type.StayTime: GetCollected = Data_Manager.m_Data.DailyQuests[7]; break;
+            case DailyQuest_Type.DailyAttendance: return 0;
+            case DailyQuest_Type.LevelUp: return 1;
+            case DailyQuest_Type.Summon: return 2;
+            case DailyQuest_Type.Dungeon: return 3;
+            case DailyQuest_Type.ADS: return 4;
+            case DailyQuest_Type.UseDiamond: return 5;
+            case DailyQuest_Type.MonsterKill: return 6;
+            case DailyQuest_Type.StayTime: return 7;
         }
-        CollectedPanel.SetActive(GetCollected);
+        return -1;
+    }
+
+    private void CheckInit(DailyQuest_Type type)
+    {
+        int index = SaveIndex(type);
+        CollectedPanel.SetActive(index >= 0 && Data_Manager.m_Data.DailyQuests[index]);
     }
 
 
