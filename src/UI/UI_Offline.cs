@@ -89,6 +89,8 @@ public class UI_Offline : UI_Base
 
     public override void DisableOBJ()
     {
+        // 같은 오프라인 시간으로 보상을 두 번 받지 않도록 비운다.
+        Utils.ConsumeOfflineTime();
 
         Base_Manager.Pool.Pooling_OBJ("COIN_PARENT").Get((value) =>
         {

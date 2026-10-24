@@ -80,6 +80,8 @@ public class Base_Manager : MonoBehaviour
 
         if (GetGameStart == false) return;
 
+        IAP.ProcessPendingPurchases();
+
         Save_Timer += Time.unscaledDeltaTime;
         if (Save_Timer >= 10.0f)
         {
@@ -192,6 +194,15 @@ public class Base_Manager : MonoBehaviour
         {
             Firebase.WriteData();
 
+        }
+    }
+
+    // 모바일은 백그라운드에서 강제 종료되면 OnDestroy가 호출되지 않을 수 있다.
+    private void OnApplicationPause(bool pause)
+    {
+        if (pause && GetGameStart)
+        {
+            Firebase.WriteData();
         }
     }
 

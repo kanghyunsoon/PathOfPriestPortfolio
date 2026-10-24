@@ -20,8 +20,17 @@ public partial class Firebase_Manager
     public Action OnFirebaseLoadComplete;
     public Dictionary<string, bool> _loadedDebuffDict = new Dictionary<string, bool>();
 
+    // 서버 데이터를 모두 불러온 뒤에만 저장한다.
+    // 불러오기 전에 저장하면 기존 데이터를 빈 값으로 덮어쓴다.
+    private bool isDataLoaded = false;
+
     public void WriteData()
     {
+        if (!isDataLoaded || currentUser == null)
+        {
+            return;
+        }
+
         // // json
         // User user = new User();
         // user.userName = currentUser.UserId;
@@ -38,23 +47,22 @@ public partial class Firebase_Manager
         if (Data_Manager.m_Data != null)
         {
             data = Data_Manager.m_Data;
-            DateTime LastDate = DateTime.Parse(data.EndDate);
-            data.EndDate = Timer_NTP.NowTime.ToString();
+            DateTime now = Timer_NTP.NowTime;
 
-            if (GetDataItem(LastDate, DateTime.Now))
+            // 플레이 중에 자정을 넘긴 경우
+            if (Timer_NTP.TryParseSaved(data.EndDate, out DateTime lastUtc))
             {
-                data.Key[0] = 2;
-                data.Key[1] = 2;
-                data.Hero_ADS_Count = 0;
-                data.Relic_ADS_Count = 0;
+                ResetDailyIfNewDay(data, lastUtc.ToLocalTime(), now);
             }
+
+            data.EndDate = Timer_NTP.ToSaveString(now);
         }
 
         string Default_json = JsonUtility.ToJson(data);
         reference.Child("USER").Child(currentUser.UserId).Child("DATA").SetRawJsonValueAsync(Default_json).ContinueWithOnMainThread(task =>
         {
 
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("기본 데이터 쓰기 실패 : " + task.Exception.ToString());
             }
@@ -67,7 +75,7 @@ public partial class Firebase_Manager
         string Character_Json = JsonConvert.SerializeObject(Base_Manager.Data.Character_Holder);
         reference.Child("USER").Child(currentUser.UserId).Child("CHARACTER").SetRawJsonValueAsync(Character_Json).ContinueWithOnMainThread(task =>
         {
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("케릭터 데이터 쓰기 실패 : " + task.Exception.ToString());
             }
@@ -79,7 +87,7 @@ public partial class Firebase_Manager
         string Item_json = JsonConvert.SerializeObject(Base_Manager.Data.Item_Holder);
         reference.Child("USER").Child(currentUser.UserId).Child("ITEM").SetRawJsonValueAsync(Item_json).ContinueWithOnMainThread(task =>
         {
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("아이템 데이터 쓰기 실패 : " + task.Exception.ToString());
             }
@@ -91,7 +99,7 @@ public partial class Firebase_Manager
         string Smelt_json = JsonConvert.SerializeObject(Base_Manager.Data.m_Data_Smelt);
         reference.Child("USER").Child(currentUser.UserId).Child("SMELT").SetRawJsonValueAsync(Smelt_json).ContinueWithOnMainThread(task =>
         {
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("각인 데이터 쓰기 실패 : " + task.Exception.ToString());
             }
@@ -103,7 +111,7 @@ public partial class Firebase_Manager
         string masteryJson = JsonConvert.SerializeObject(Base_Manager.Data.m_Data_Mastery);
         reference.Child("USER").Child(currentUser.UserId).Child("MASTERY").SetRawJsonValueAsync(masteryJson).ContinueWithOnMainThread(task =>
         {
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("마스터리 데이터 저장 실패 : " + task.Exception.ToString());
             }
@@ -130,7 +138,7 @@ public partial class Firebase_Manager
         string SetCharacter_json = JsonConvert.SerializeObject(SetCharacterNames);
         reference.Child("USER").Child(currentUser.UserId).Child("SET_CHARACTER").SetRawJsonValueAsync(SetCharacter_json).ContinueWithOnMainThread(task =>
         {
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("SetCharacter 저장 실패 : " + task.Exception.ToString());
             }
@@ -155,7 +163,7 @@ public partial class Firebase_Manager
         string SetItem_json = JsonConvert.SerializeObject(SetItemNames);
         reference.Child("USER").Child(currentUser.UserId).Child("SET_ITEM").SetRawJsonValueAsync(SetItem_json).ContinueWithOnMainThread(task =>
         {
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("SetItem 저장 실패 : " + task.Exception.ToString());
             }
@@ -172,7 +180,7 @@ public partial class Firebase_Manager
         string Debuff_json = JsonConvert.SerializeObject(debuffDict);
         reference.Child("USER").Child(currentUser.UserId).Child("DEBUFF").SetRawJsonValueAsync(Debuff_json).ContinueWithOnMainThread(task =>
         {
-            if (!task.IsCompleted)
+            if (task.IsFaulted || task.IsCanceled)
             {
                 Debug.LogError("디버프 데이터 저장 실패 : " + task.Exception.ToString());
             }
@@ -193,20 +201,35 @@ public partial class Firebase_Manager
 
         Debug.Log(" [ReadData] 호출됨 / 유저 ID: " + currentUser.UserId);
 
+        isDataLoaded = false;
 
+        // DATA, CHARACTER, ITEM, SMELT, MASTERY
+        const int subLoadCount = 5;
         int completeCount = 0;
         bool isDebuffLoaded = false;
+        bool loadFailed = false;
 
         void TryFinalizeLoad()
         {
             Debug.Log($"[TryFinalizeLoad] completeCount: {completeCount}, isDebuffLoaded: {isDebuffLoaded}");
-            if (completeCount >= 4 && isDebuffLoaded)
+            if (completeCount >= subLoadCount && isDebuffLoaded)
             {
+                if (loadFailed)
+                {
+                    // 일부만 불러온 채로 시작하면 다음 자동 저장이 서버 데이터를 덮어쓴다.
+                    Debug.LogError("[TryFinalizeLoad] 불러오기에 실패한 데이터가 있어 게임을 시작하지 않습니다.");
+                    Base_Canvas.instance.Get_UI("#NetError");
+                    Base_Manager.instance.Invoke("QuitGame", 3f);
+                    return;
+                }
+
                 Debug.Log("[TryFinalizeLoad] 모든 데이터 로드 완료. 초기화 실행.");
+                isDataLoaded = true;
                 Base_Manager.Data.Init(); // 캐릭터/아이템 세팅
                 OnFirebaseLoadComplete?.Invoke();
                 LoadingScene.instance.LoadingMain();
                 LoadSetCharacter();
+                LoadSetItem(); // m_Data_Item은 Data.Init() 이후에 채워진다
             }
         }
 
@@ -222,7 +245,7 @@ public partial class Firebase_Manager
         #region DEFAULT_DATA
         reference.Child("USER").Child(currentUser.UserId).Child("DATA").GetValueAsync().ContinueWithOnMainThread(task =>
         {
-            if (task.IsCompleted)
+            if (!task.IsFaulted && !task.IsCanceled)
             {
                 DataSnapshot snapshot = task.Result;
 
@@ -235,43 +258,37 @@ public partial class Firebase_Manager
                     PlayerPrefs.DeleteAll();
                     PlayerPrefs.Save();
 
+                    string now = Timer_NTP.ToSaveString(Timer_NTP.NowTime);
                     Data_Manager.m_Data = new Data
                     {
                         ATK = 50,
                         HP = 100,
-                        StartDate = DateTime.Now.ToString(),
-                        EndDate = DateTime.Now.ToString(),
+                        StartDate = now,
+                        EndDate = now,
                         Key = new int[] { 2, 2 },
                          DailyQuests = new bool[8], // 필수 초기화
                         Achievement_B = new bool[Base_Manager.Quest.Achievement_Lists.Count]
                     };
 
+                    Utils.SetLastSessionEnd(null);
                     Base_Manager.Quest.Init(); // 여기 추가!
                 }
                 else
                 {
                     var default_Data = JsonUtility.FromJson<Data>(snapshot.GetRawJsonValue());
                     Data data = default_Data ?? new Data();
-                    data.StartDate = Timer_NTP.NowTime.ToString();
+                    DateTime now = Timer_NTP.NowTime;
+                    data.StartDate = Timer_NTP.ToSaveString(now);
 
-                    DateTime startDate = DateTime.Parse(data.StartDate);
-                    DateTime endDate = DateTime.Parse(data.EndDate);
-
-                    if (GetDataItem(startDate, endDate))
+                    if (Timer_NTP.TryParseSaved(data.EndDate, out DateTime lastUtc))
                     {
-                        data.Key[0] = 2;
-                        data.Key[1] = 2;
-                        // DailyQuest
-                        data.DailyAttendance = 1;
-                        data.LevelUp = 0;
-                        data.Dungeon = 0;
-                        data.Summon = 0;
-                        data.ADS = 0;
-                        data.UseDiamond = 0;
-                        data.MonsterKill = 0;
-                        data.StayTime = 0;
-
-                        for (int i = 0; i < data.DailyQuests.Length; i++) data.DailyQuests[i] = false;
+                        Utils.SetLastSessionEnd(lastUtc);
+                        ResetDailyIfNewDay(data, lastUtc.ToLocalTime(), now);
+                    }
+                    else
+                    {
+                        Debug.LogWarning("[DEFAULT_DATA] EndDate를 읽을 수 없어 오프라인 보상을 건너뜁니다 : " + data.EndDate);
+                        Utils.SetLastSessionEnd(null);
                     }
 
                     Data_Manager.m_Data = data;
@@ -283,14 +300,16 @@ public partial class Firebase_Manager
             else
             {
                 Debug.LogError("데이터 읽기 실패 : " + task.Exception.ToString());
+                loadFailed = true;
             }
+            OnSubLoadComplete("DATA");
         });
         #endregion
 
         #region CHARACTER_DATA
         reference.Child("USER").Child(currentUser.UserId).Child("CHARACTER").GetValueAsync().ContinueWithOnMainThread(task =>
         {
-            if (task.IsCompleted)
+            if (!task.IsFaulted && !task.IsCanceled)
             {
 
                 DataSnapshot snapshot = task.Result;
@@ -309,6 +328,7 @@ public partial class Firebase_Manager
             else
             {
                 Debug.LogError($"[CHARACTER_DATA] 불러오기 실패: {task.Exception}");
+                loadFailed = true;
             }
 
             OnSubLoadComplete("CHARACTER");
@@ -319,7 +339,7 @@ public partial class Firebase_Manager
         #region Item_Data
         reference.Child("USER").Child(currentUser.UserId).Child("ITEM").GetValueAsync().ContinueWithOnMainThread(task =>
        {
-           if (task.IsCompleted)
+           if (!task.IsFaulted && !task.IsCanceled)
            {
                DataSnapshot snapshot = task.Result;
 
@@ -337,6 +357,7 @@ public partial class Firebase_Manager
            else
            {
                Debug.LogError($"[ITEM_DATA] 불러오기 실패: {task.Exception}");
+               loadFailed = true;
            }
            OnSubLoadComplete("ITEM");
        });
@@ -345,7 +366,7 @@ public partial class Firebase_Manager
         #region Smelt_Data
         reference.Child("USER").Child(currentUser.UserId).Child("SMELT").GetValueAsync().ContinueWithOnMainThread(task =>
         {
-            if (task.IsCompleted)
+            if (!task.IsFaulted && !task.IsCanceled)
             {
                 DataSnapshot snapshot = task.Result;
 
@@ -364,6 +385,7 @@ public partial class Firebase_Manager
             else
             {
                 Debug.LogError($"[SMELT_DATA] 불러오기 실패: {task.Exception}");
+                loadFailed = true;
             }
             OnSubLoadComplete("SMELT");
 
@@ -374,7 +396,7 @@ public partial class Firebase_Manager
         #region MASTERY_DATA
         reference.Child("USER").Child(currentUser.UserId).Child("MASTERY").GetValueAsync().ContinueWithOnMainThread(task =>
         {
-            if (task.IsCompleted)
+            if (!task.IsFaulted && !task.IsCanceled)
             {
                 DataSnapshot snapshot = task.Result;
                 if (snapshot.Exists)
@@ -391,52 +413,17 @@ public partial class Firebase_Manager
             else
             {
                 Debug.LogError($"[MASTERY_DATA] 불러오기 실패: {task.Exception}");
+                loadFailed = true;
             }
             OnSubLoadComplete("MASTERY");
         });
         #endregion
 
 
-        #region SET_ITEM
-        reference.Child("USER").Child(currentUser.UserId).Child("SET_ITEM").GetValueAsync().ContinueWithOnMainThread(task =>
-        {
-            if (task.IsCompleted)
-            {
-                DataSnapshot snapshot = task.Result;
-
-                if (snapshot.Exists)
-                {
-                    string[] itemNames = JsonConvert.DeserializeObject<string[]>(snapshot.GetRawJsonValue());
-                    for (int i = 0; i < itemNames.Length; i++)
-                    {
-                        if (!string.IsNullOrEmpty(itemNames[i]) && Base_Manager.Data.m_Data_Item.ContainsKey(itemNames[i]))
-                        {
-                            Base_Manager.Data.m_Set_Item[i] = Base_Manager.Data.m_Data_Item[itemNames[i]].Data;
-                        }
-                        else
-                        {
-                            Base_Manager.Data.m_Set_Item[i] = null;
-                        }
-                    }
-                }
-                else
-                {
-                    Debug.Log("SET_ITEM 데이터가 존재하지 않습니다.");
-                }
-
-                Relic_Manager.instance.Initialize();
-            }
-            else
-            {
-                Debug.LogError("SET_ITEM 불러오기 실패 : " + task.Exception.ToString());
-            }
-        });
-        #endregion
-
         #region DEBUFF_CHARACTER
         reference.Child("USER").Child(currentUser.UserId).Child("DEBUFF").GetValueAsync().ContinueWithOnMainThread(task =>
         {
-            if (task.IsCompleted)
+            if (!task.IsFaulted && !task.IsCanceled)
             {
                 DataSnapshot snapshot = task.Result;
                 if (snapshot.Exists)
@@ -456,6 +443,7 @@ public partial class Firebase_Manager
             else
             {
                 Debug.LogError($"[DEBUFF] 불러오기 실패: {task.Exception}");
+                loadFailed = true;
             }
             isDebuffLoaded = true;
             TryFinalizeLoad();
@@ -470,20 +458,41 @@ public partial class Firebase_Manager
         Base_Manager.ADS.Init();
     }
 
-    private bool GetDataItem(DateTime startTime, DateTime endTime)
+    // 마지막 저장 이후 날짜가 바뀌었으면 일일 콘텐츠를 초기화한다. (사용자 기기 시간대 기준)
+    // 예전에는 Day 값만 비교해서 1월 5일 -> 2월 5일처럼 날짜 숫자가 같으면 초기화되지 않았다.
+    private void ResetDailyIfNewDay(Data data, DateTime lastLocal, DateTime nowLocal)
     {
-        if (startTime.Day != endTime.Day)
+        if (nowLocal.Date <= lastLocal.Date)
         {
-            return true;
+            return;
         }
-        return false;
+
+        data.Key[0] = 2;
+        data.Key[1] = 2;
+        data.Hero_ADS_Count = 0;
+        data.Relic_ADS_Count = 0;
+
+        // DailyQuest
+        data.DailyAttendance = 1;
+        data.LevelUp = 0;
+        data.Dungeon = 0;
+        data.Summon = 0;
+        data.ADS = 0;
+        data.UseDiamond = 0;
+        data.MonsterKill = 0;
+        data.StayTime = 0;
+
+        if (data.DailyQuests != null)
+        {
+            for (int i = 0; i < data.DailyQuests.Length; i++) data.DailyQuests[i] = false;
+        }
     }
 
     private void LoadSetCharacter()
     {
         reference.Child("USER").Child(currentUser.UserId).Child("SET_CHARACTER").GetValueAsync().ContinueWithOnMainThread(task =>
         {
-            if (task.IsCompleted)
+            if (!task.IsFaulted && !task.IsCanceled)
             {
                 DataSnapshot snapshot = task.Result;
 
@@ -509,5 +518,42 @@ public partial class Firebase_Manager
             }
         });
 
+    }
+
+    private void LoadSetItem()
+    {
+        reference.Child("USER").Child(currentUser.UserId).Child("SET_ITEM").GetValueAsync().ContinueWithOnMainThread(task =>
+        {
+            if (!task.IsFaulted && !task.IsCanceled)
+            {
+                DataSnapshot snapshot = task.Result;
+
+                if (snapshot.Exists)
+                {
+                    string[] itemNames = JsonConvert.DeserializeObject<string[]>(snapshot.GetRawJsonValue());
+                    for (int i = 0; i < itemNames.Length && i < Base_Manager.Data.m_Set_Item.Length; i++)
+                    {
+                        if (!string.IsNullOrEmpty(itemNames[i]) && Base_Manager.Data.m_Data_Item.ContainsKey(itemNames[i]))
+                        {
+                            Base_Manager.Data.m_Set_Item[i] = Base_Manager.Data.m_Data_Item[itemNames[i]].Data;
+                        }
+                        else
+                        {
+                            Base_Manager.Data.m_Set_Item[i] = null;
+                        }
+                    }
+                }
+                else
+                {
+                    Debug.Log("SET_ITEM 데이터가 존재하지 않습니다.");
+                }
+
+                Relic_Manager.instance.Initialize();
+            }
+            else
+            {
+                Debug.LogError("SET_ITEM 불러오기 실패 : " + task.Exception.ToString());
+            }
+        });
     }
 }

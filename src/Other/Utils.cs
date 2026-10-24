@@ -120,24 +120,43 @@ public class Utils
         return -1;
     }
 
+    // 접속할 때 읽은 마지막 종료 시각(UTC).
+    // EndDate는 자동 저장 때마다 현재 시각으로 바뀌기 때문에 오프라인 시간 계산에는 이 값을 쓴다.
+    private static DateTime? lastSessionEndUtc;
+    private static double? offlineSeconds;
+
+    public static void SetLastSessionEnd(DateTime? utc)
+    {
+        lastSessionEndUtc = utc;
+        offlineSeconds = null;
+    }
+
+    // 오프라인 경과 시간(초). 처음 계산한 값을 보상을 받을 때까지 유지한다.
     public static double TimerCheck()
     {
-        if(Data_Manager.m_Data.StartDate == "" || Data_Manager.m_Data.EndDate == "")
+        if (offlineSeconds == null)
         {
-            return 0.0d;
+            if (lastSessionEndUtc == null || !Timer_NTP.IsSynced)
+            {
+                return 0.0d;
+            }
+
+            double seconds = (Timer_NTP.UtcNow - lastSessionEndUtc.Value).TotalSeconds;
+            offlineSeconds = Math.Max(0.0d, seconds); // 기기 시간대 변경 등으로 음수가 나오면 0
         }
-        DateTime startDate = DateTime.Parse(Data_Manager.m_Data.StartDate);
-        DateTime endDate = DateTime.Parse(Data_Manager.m_Data.EndDate);
 
-        TimeSpan timer = startDate - endDate;
-        double timeCount = timer.TotalSeconds;
+        return offlineSeconds.Value;
+    }
 
-        return timeCount;
+    public static void ConsumeOfflineTime()
+    {
+        lastSessionEndUtc = null;
+        offlineSeconds = 0.0d;
     }
 
     public static string NextDayTimer()
     {
-        DateTime NowDate = DateTime.Now;
+        DateTime NowDate = Timer_NTP.NowTime;
         DateTime NextDate = NowDate.AddDays(1);
         NextDate = new DateTime(NextDate.Year, NextDate.Month, NextDate.Day, 0, 0, 0);
 

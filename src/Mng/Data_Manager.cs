@@ -311,13 +311,7 @@ public class Data_Manager
 
     public void CheckDebuffFromOfflineTime()
     {
-        if (!DateTime.TryParse(Data_Manager.m_Data.EndDate, out DateTime lastLogin))
-        {
-            Debug.LogWarning("[디버프] EndDate 파싱 실패");
-            return;
-        }
-
-        TimeSpan offlineDuration = Timer_NTP.NowTime - lastLogin;
+        TimeSpan offlineDuration = TimeSpan.FromSeconds(Utils.TimerCheck());
         int debuffCountToApply = (int)(offlineDuration.TotalHours / 12);
 
         if (debuffCountToApply <= 0) return;
