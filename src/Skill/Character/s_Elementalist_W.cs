@@ -26,9 +26,13 @@ public class s_Elementalist_W : Skill_Base
         int value = SkillParticle.transform.childCount;
         for(int i =0; i<value; i++)
         {
+            // 몬스터가 모두 사라졌으면 빈 배열에서 고르다 예외가 나고 스킬 상태가 풀리지 않았다.
+            Monster[] targets = monsters;
+            if (targets.Length == 0) break;
+
             var meteor = SkillParticle.transform.GetChild(0).GetComponent<Meteor>();
             meteor.gameObject.SetActive(true);
-            Vector3 pos = monsters[Random.Range(0, monsters.Length)].transform.position +
+            Vector3 pos = targets[Random.Range(0, targets.Length)].transform.position +
                 new Vector3(Random.insideUnitSphere.x * 2.0f, 0.0f, Random.insideUnitSphere.z * 2.0f);
 
             meteor.transform.position = pos;

@@ -26,6 +26,8 @@ public class Player : Character
     public bool closeRange = false;
     public bool ReadyCharacter;
     double MaxHP;
+    float baseAtkSpeed;
+    float skillAtkSpeedMultiplier = 1.0f;
 
     protected override void Start()
     {
@@ -56,10 +58,12 @@ public class Player : Character
         Bullet_Name = CH_Data.m_CharacterName;
         attack_Range = data.m_Attack_Range;
         ATK_Speed = data.m_Attack_Speed;
-        Set_ATKHP();
+        Set_ATKHP(true);
     }
 
-    public void Set_ATKHP()
+    // refill이 false면 능력치가 바뀌어도 남은 체력 비율을 유지한다.
+    // 예전에는 레벨업·장비 변경 때마다 전투 중인 영웅의 체력이 가득 찼다.
+    public void Set_ATKHP(bool refill = false)
     {
         bool isDebuff = false;
 
@@ -77,10 +81,19 @@ public class Player : Character
             ATK = atk / 2;
         else ATK = atk;
 
-        HP = hp;
+        double ratio = (refill || MaxHP <= 0.0) ? 1.0 : HP / MaxHP;
+        HP = hp * ratio;
         MaxHP = hp;
-        ATK_Speed = aTK_Speed;
+        baseAtkSpeed = aTK_Speed;
+        ATK_Speed = baseAtkSpeed * skillAtkSpeedMultiplier;
 
+    }
+
+    // 스킬이 공격 속도를 바꿀 때 쓴다. 능력치를 다시 계산해도 배율이 유지되고, 끝나면 기본값으로 돌아간다.
+    public void SetSkillAtkSpeedMultiplier(float multiplier)
+    {
+        skillAtkSpeedMultiplier = multiplier;
+        ATK_Speed = baseAtkSpeed * skillAtkSpeedMultiplier;
     }
 
     // 회복은 최대 체력을 넘지 않는다. 예전에는 메인 캐릭터 회복이 계속 쌓여 체력이 끝없이 늘었다.
@@ -128,7 +141,7 @@ public class Player : Character
 
         AnimatorChange("IsIdle");
         isDead = false;
-        Set_ATKHP();
+        Set_ATKHP(true);
 
         transform.position = startPos;
         transform.rotation = rot;
