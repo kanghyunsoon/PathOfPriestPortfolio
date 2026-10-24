@@ -18,10 +18,7 @@ public class Mastery_Button : MonoBehaviour
 
     private void Start()
     {
-        string key = $"mastery_{Id}";
-        int unlocked = PlayerPrefs.GetInt(key, 0);
-
-        if (unlocked == 1)
+        if (Data_Manager.IsMasteryUnlocked(Id))
         {
             isUnlocked = true;
             if (SelfMask) SelfMask.GetComponent<Image>().color = new Color(0.0f, 0.9725f, 1.0f, 1.0f); // 마스터리 활성화됨
@@ -55,10 +52,7 @@ public class Mastery_Button : MonoBehaviour
         {
             foreach (int preId in PrerequisiteIds)
             {
-                string prerequisiteKey = $"mastery_{preId}";
-                int unlocked = PlayerPrefs.GetInt(prerequisiteKey, 0);
-
-                if (unlocked == 0) // 하나라도 잠겨있으면
+                if (!Data_Manager.IsMasteryUnlocked(preId)) // 하나라도 잠겨있으면
                 {
                     Base_Canvas.instance.Get_Toast().Initialize(Local_Manager.local_Data["NeedPreviousMastery"].Get_Data(), Color.red);
                     return;
@@ -81,9 +75,9 @@ public class Mastery_Button : MonoBehaviour
 
         Data_Manager.m_Data.Money -= Gold;
 
-        string key = $"mastery_{Id}";
-        PlayerPrefs.SetInt(key, 1); // 해금 처리
-        PlayerPrefs.Save();
+        // 해금 상태는 보너스와 같이 서버 데이터에 저장한다.
+        Data_Manager.UnlockMastery(Id);
+        isUnlocked = true;
 
         //  마스터리 합산
         if (Base_Manager.Data.m_Data_Mastery.ContainsKey(Status))
@@ -111,6 +105,8 @@ public class Mastery_Button : MonoBehaviour
 
         if (SelfMask) SelfMask.GetComponent<Image>().color = new Color(0.0f, 0.9725f, 1.0f, 1.0f); ;
         Main_UI.instance.TextCheck();
+        Base_Manager.Player.UpdateStats();
+        Base_Manager.Firebase.WriteData();
 
     }
     private void TryActivateNext(GameObject nextObj)
@@ -126,10 +122,7 @@ public class Mastery_Button : MonoBehaviour
         {
             foreach (int preId in nextMastery.PrerequisiteIds)
             {
-                string prerequisiteKey = $"mastery_{preId}";
-                int unlocked = PlayerPrefs.GetInt(prerequisiteKey, 0);
-
-                if (unlocked == 0)
+                if (!Data_Manager.IsMasteryUnlocked(preId))
                 {
                     // 하나라도 잠겨있으면 색칠 안 함
                     return;

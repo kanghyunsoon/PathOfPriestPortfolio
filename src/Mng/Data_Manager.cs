@@ -48,6 +48,8 @@ public class Data
     public int GoldDungeon_Count;
     public int DiaDungeon_Count;
     public int Quest_Count;
+    // 현재 메인 퀘스트를 시작할 때의 카운터 값. 진행도는 이 값과의 차이로 센다.
+    public int Quest_StartValue;
     public double EXP;
     public int Stage;
 
@@ -91,6 +93,9 @@ public class Data
     // Achievement_Data
     public bool[] Achievement_B = new bool[11];
 
+    // 해금한 마스터리 Id. 예전에는 기기의 PlayerPrefs에만 있어 기기를 바꾸면 해금 상태가 사라졌다.
+    // null이면 이 필드가 없던 저장 데이터라서 기기에 남은 기록을 한 번 옮긴다.
+    public List<int> Mastery_Unlocked;
 }
 
 public class Data_Manager
@@ -128,7 +133,35 @@ public class Data_Manager
         }
 
         CheckDebuffFromOfflineTime(); // 새로 적용
+        MigrateMasteryUnlocks();
 
+    }
+
+    private const int LegacyMasteryIdLimit = 512;
+
+    private void MigrateMasteryUnlocks()
+    {
+        if (m_Data.Mastery_Unlocked != null) return;
+
+        m_Data.Mastery_Unlocked = new List<int>();
+        for (int id = 0; id < LegacyMasteryIdLimit; id++)
+        {
+            if (PlayerPrefs.GetInt($"mastery_{id}", 0) == 1)
+            {
+                m_Data.Mastery_Unlocked.Add(id);
+            }
+        }
+    }
+
+    public static bool IsMasteryUnlocked(int id)
+    {
+        return m_Data.Mastery_Unlocked != null && m_Data.Mastery_Unlocked.Contains(id);
+    }
+
+    public static void UnlockMastery(int id)
+    {
+        if (m_Data.Mastery_Unlocked == null) m_Data.Mastery_Unlocked = new List<int>();
+        if (!m_Data.Mastery_Unlocked.Contains(id)) m_Data.Mastery_Unlocked.Add(id);
     }
 
 

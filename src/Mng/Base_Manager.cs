@@ -97,7 +97,14 @@ public class Base_Manager : MonoBehaviour
             }
         }
 
-        if (Data_Manager.m_Data.Buff_x2 > 0.0f) Data_Manager.m_Data.Buff_x2 -= Time.unscaledDeltaTime;
+        if (Data_Manager.m_Data.Buff_x2 > 0.0f)
+        {
+            Data_Manager.m_Data.Buff_x2 -= Time.unscaledDeltaTime;
+            if (Data_Manager.m_Data.Buff_x2 <= 0.0f && isFast && Main_UI.instance != null)
+            {
+                Main_UI.instance.ExpireFast();
+            }
+        }
     }
 
     private void initalize()

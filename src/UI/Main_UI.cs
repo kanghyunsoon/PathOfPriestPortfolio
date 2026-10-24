@@ -98,7 +98,8 @@ public class Main_UI : MonoBehaviour
         Monster_Slider_Count();
 
 
-        Base_Manager.isFast = PlayerPrefs.GetInt("FAST") == 1 ? true : false;
+        // 배속은 광고 버프가 남아 있을 때만 이어서 켠다.
+        Base_Manager.isFast = PlayerPrefs.GetInt("FAST") == 1 && Data_Manager.m_Data.Buff_x2 > 0.0f;
 
         TimeCheck();
         BuffCheck();
@@ -204,25 +205,35 @@ public class Main_UI : MonoBehaviour
 
     public void GetFast()
     {
-        bool fast = !Base_Manager.isFast;
-        if (fast == true)
+        // 버프가 없으면 광고를 끝까지 본 뒤에 켠다.
+        // 예전에는 광고 결과와 상관없이 바로 켜져서, 광고를 닫아도 배속이 유지되고 저장됐다.
+        if (!Base_Manager.isFast && Data_Manager.m_Data.Buff_x2 <= 0.0f)
         {
-            if (Data_Manager.m_Data.Buff_x2 <= 0.0f)
+            Base_Manager.ADS.ShowRewardedAds(() =>
             {
-                Base_Manager.ADS.ShowRewardedAds(() =>
-                {
-                    Data_Manager.m_Data.Buff_x2 = 1800.0f;
-                    BuffCheck();
-                    TimeCheck();
-                });
-            }
+                Data_Manager.m_Data.Buff_x2 = 1800.0f;
+                SetFast(true);
+            });
+            return;
         }
+
+        SetFast(!Base_Manager.isFast);
+    }
+
+    // 버프 시간이 끝나면 Base_Manager가 호출한다.
+    public void ExpireFast()
+    {
+        if (!Base_Manager.isFast) return;
+        SetFast(false);
+    }
+
+    private void SetFast(bool fast)
+    {
         Base_Manager.isFast = fast;
-        PlayerPrefs.SetInt("FAST", fast == true ? 1 : 0);
+        PlayerPrefs.SetInt("FAST", fast ? 1 : 0);
 
         BuffCheck();
         TimeCheck();
-
     }
 
     public void GetItem(Item_Scriptable item)
@@ -519,7 +530,8 @@ public class Main_UI : MonoBehaviour
                 if (Spawner.m_Monsters[i].isDead == false)
                 {
                     Spawner.m_Monsters[i].isDead = true;
-                    Base_Manager.Pool.m_pool_Dictionary["Monster"].Return(Spawner.m_Monsters[i].gameObject);
+                    // 원거리·엘리트 몬스터가 일반 몬스터 풀로 섞이지 않게 자기 풀로 반납한다.
+                    Base_Manager.Pool.m_pool_Dictionary[Spawner.m_Monsters[i].poolKey].Return(Spawner.m_Monsters[i].gameObject);
                 }
             }
         }
