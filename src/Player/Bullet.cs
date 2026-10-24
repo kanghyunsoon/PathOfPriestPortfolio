@@ -71,17 +71,18 @@ public class Bullet : MonoBehaviour
 
         if(Vector3.Distance(transform.position, m_TargetPos) <= 0.1f)
         {
-            if(m_Target != null)
+            GetHit = true;
+
+            // 날아가는 동안 보스가 파괴되거나 몬스터가 풀로 돌아가도 투사체는 반납한다.
+            if (m_Target != null && m_Target.gameObject.activeInHierarchy)
             {
-                GetHit = true;
-
                 m_Target.GetComponent<Character>().GetDamage(m_DMG);
-
-                m_Projectiles[m_CharacterName].gameObject.SetActive(false);
-                m_Muzzles[m_CharacterName].Play();
-
-                StartCoroutine(ReturnObject(m_Muzzles[m_CharacterName].main.duration));
             }
+
+            m_Projectiles[m_CharacterName].gameObject.SetActive(false);
+            m_Muzzles[m_CharacterName].Play();
+
+            StartCoroutine(ReturnObject(m_Muzzles[m_CharacterName].main.duration));
         }
     }
 

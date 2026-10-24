@@ -161,7 +161,7 @@ public class Utils
         NextDate = new DateTime(NextDate.Year, NextDate.Month, NextDate.Day, 0, 0, 0);
 
         TimeSpan timer = NextDate - NowDate;
-        return timer.Hours + ":" + timer.Minutes + ":" + timer.Seconds;
+        return string.Format("{0:00}:{1:00}:{2:00}", timer.Hours, timer.Minutes, timer.Seconds);
     }
 
     public static bool Item_Count(string itemName, int value)

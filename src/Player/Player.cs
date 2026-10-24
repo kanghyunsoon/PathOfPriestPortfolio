@@ -95,7 +95,22 @@ public class Player : Character
     {
         Initialize();
         Stage_Manager.isDungeon = true;
-        Spawner.m_Players.Add(this);
+        if (!Spawner.m_Players.Contains(this))
+            Spawner.m_Players.Add(this);
+    }
+
+    // 편성에서 빠진 영웅은 Character_Spawner가 파괴한다.
+    // 정적 이벤트와 목록에 남으면 파괴된 영웅을 몬스터가 계속 찾으면서 예외가 난다.
+    private void OnDestroy()
+    {
+        Stage_Manager.m_ReadyEvent -= OnReady;
+        Stage_Manager.m_BossEvent -= OnBoss;
+        Stage_Manager.m_ClearEvent -= OnClear;
+        Stage_Manager.m_DeadEvent -= OnDead;
+        Stage_Manager.m_DungeonEvent -= OnDungeon;
+        Stage_Manager.m_DungeonClearEvent -= OnDungeonClear;
+
+        Spawner.m_Players.Remove(this);
     }
 
     private void Initialize()
@@ -260,6 +275,7 @@ public class Player : Character
                 {
                     m_Target = null;
                     FindClosetTarget(Spawner.m_Monsters.ToArray());
+                    if (m_Target == null) return;
                 }
 
                 float targetDistance = Vector3.Distance(transform.position, m_Target.position);
