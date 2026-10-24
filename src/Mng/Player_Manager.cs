@@ -19,7 +19,8 @@ public class Player_Manager
 
 
 
-    public void EXP_UP()
+    // 골드가 부족해 올리지 못했으면 false를 돌려준다.
+    public bool EXP_UP()
     {
         double LevelUpMoneyValue = Utils.CalculatedValue(
          Utils.Data.levelData.B_MONEY,
@@ -29,7 +30,7 @@ public class Player_Manager
         if (Data_Manager.m_Data.Money < LevelUpMoneyValue)
         {
             Base_Canvas.instance.Get_Toast().Initialize(Local_Manager.local_Data["NeedGold"].Get_Data(), Color.red);
-            return;
+            return false;
         }
 
         Data_Manager.m_Data.Money -= LevelUpMoneyValue; // 골드 차감
@@ -50,6 +51,7 @@ public class Player_Manager
             for (int i = 0; i < Spawner.m_Players.Count; i++) Spawner.m_Players[i].Set_ATKHP();
         }
         Main_UI.instance.TextMoney();
+        return true;
     }
 
     public float EXP_Percentage()

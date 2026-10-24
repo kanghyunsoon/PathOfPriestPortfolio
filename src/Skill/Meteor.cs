@@ -21,6 +21,8 @@ public class Meteor : MonoBehaviour
         }
         transform.parent = null;
         StartCoroutine(Meteor_Coroutine(dmg));
+        // 발동할 때마다 구독이 쌓이지 않게 한 번만 연결한다.
+        Stage_Manager.m_ReadyEvent -= DisableOBJ;
         Stage_Manager.m_ReadyEvent += DisableOBJ;
     }
 
@@ -76,6 +78,7 @@ public class Meteor : MonoBehaviour
         yield return new WaitForSeconds(0.5f);
         transform.parent = parentTransform;
         Meteor_OBJ.gameObject.SetActive(false);
+        Stage_Manager.m_ReadyEvent -= DisableOBJ;
         this.gameObject.SetActive(false);
 
     }

@@ -80,7 +80,23 @@ public class Quest_Manager
         LoadQuests();
         scriptavle_Data = Resources.Load<Achievement_Scriptable>("Scriptable/Achievement_Data");
         Achievement_Lists = scriptavle_Data.Achievement_Data;
+        NormalizeAchievementFlags();
         LoadAchievement_Data();
+    }
+
+    // 저장된 업적 배열 길이가 업적 목록과 다르면 기존 값을 유지한 채 맞춘다.
+    // 길이가 더 길면 LoadAchievement_Data가 목록 범위를 넘어 불러오기 도중 예외가 났다.
+    private void NormalizeAchievementFlags()
+    {
+        bool[] old = Data_Manager.m_Data.Achievement_B;
+        if (old != null && old.Length == Achievement_Lists.Count) return;
+
+        bool[] resized = new bool[Achievement_Lists.Count];
+        if (old != null)
+        {
+            Array.Copy(old, resized, Math.Min(old.Length, resized.Length));
+        }
+        Data_Manager.m_Data.Achievement_B = resized;
     }
 
     public void LoadAchievement_Data()

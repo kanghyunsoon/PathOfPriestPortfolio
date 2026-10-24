@@ -34,7 +34,12 @@ public class LevelUpButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     public void EXP_UP()
     {
-        Base_Manager.Player.EXP_UP();
+        if (!Base_Manager.Player.EXP_UP())
+        {
+            // 누르고 있는 동안 골드가 떨어지면 매 프레임 안내창을 만들지 않도록 연속 강화를 멈춘다.
+            StopPush();
+            return;
+        }
         InitEXP();
         transform.DORewind();
         transform.DOPunchScale(new Vector3(0.2f, 0.2f, 0.2f), 0.25f);
@@ -49,10 +54,16 @@ public class LevelUpButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandl
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        StopPush();
+    }
+
+    private void StopPush()
+    {
         isPush = false;
         if(coroutine != null)
         {
             StopCoroutine(coroutine);
+            coroutine = null;
         }
         timer = 0.0f;
     }

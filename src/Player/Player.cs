@@ -25,6 +25,7 @@ public class Player : Character
     private int formationCount = 6; // 최대 보조 캐릭터 수
     public bool closeRange = false;
     public bool ReadyCharacter;
+    double MaxHP;
 
     protected override void Start()
     {
@@ -77,8 +78,16 @@ public class Player : Character
         else ATK = atk;
 
         HP = hp;
+        MaxHP = hp;
         ATK_Speed = aTK_Speed;
 
+    }
+
+    // 회복은 최대 체력을 넘지 않는다. 예전에는 메인 캐릭터 회복이 계속 쌓여 체력이 끝없이 늘었다.
+    public override void Heal(double heal)
+    {
+        base.Heal(heal);
+        if (HP > MaxHP) HP = MaxHP;
     }
 
     private void OnReady()
