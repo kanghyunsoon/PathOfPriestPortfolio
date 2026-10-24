@@ -31,9 +31,14 @@ public class ADS_Manager
     AdRequest      _adRequest;
 
     Action _rewardCallback;
+    bool _initialized;
 
     public void Init()
     {
+        // Base_Manager와 로그인 후 ReadData 양쪽에서 호출된다. 이벤트가 중복 등록되지 않게 한 번만 초기화한다.
+        if (_initialized) return;
+        _initialized = true;
+
         MobileAds.Initialize(initStatus => { });
         PrepareADS();
 
@@ -53,7 +58,7 @@ public class ADS_Manager
         {
             banner_Android       = banner_Android_Sample_id;
             interstitial_Android = interstitial_Android_Sample_id;
-            reward_Android       = reward_ios_Sample_id;
+            reward_Android       = reward_Android_Sample_id;
 
             banner_Ios           = banner_ios_Sample_id;
             interstitial_Ios     = interstitial_ios_Sample_id;
@@ -107,38 +112,23 @@ public class ADS_Manager
             Debug.LogError("보상형 광고가 실패하였습니다. : " + error);
             PrepareADS();
         };
-
-        ad.OnAdPaid += (AdValue adValue) =>
-        {
-            if (_rewardCallback != null)
-            {
-                _rewardCallback?.Invoke();
-                _rewardCallback = null;
-            }
-        };
+        // OnAdPaid는 광고 노출(수익) 이벤트라 끝까지 보지 않아도 호출된다.
+        // 보상은 Show()의 보상 콜백에서만 지급한다.
     }
 
     public void ShowRewardedAds(Action rewardCallBack)
     {
-        _rewardCallback = rewardCallBack;
-
-        Data_Manager.m_Data.ADS++;
-
-        if(Data_Manager.m_Data.ADS_Remove)
+        // 광고 제거를 구매했으면 광고 없이 바로 보상
+        if (Data_Manager.m_Data.ADS_Remove)
         {
-            if (_rewardCallback != null)
-            {
-                rewardCallBack?.Invoke();
-                rewardCallBack = null;
-            }
-
+            Data_Manager.m_Data.ADS++;
+            rewardCallBack?.Invoke();
             return;
         }
 
-        // 광고 제거를 구매한 상황일시 ↓
-        // _rewardCallback?.Invoke(); return;
         if (_rewardedAd != null && _rewardedAd.CanShowAd())
         {
+            _rewardCallback = rewardCallBack;
             _rewardedAd.Show((Reward reward) =>
             {
                 Debug.Log(reward.Type + " : " + reward.Amount);
@@ -157,6 +147,9 @@ public class ADS_Manager
     private IEnumerator DelayRewardCallback()
     {
         yield return null; // 한 프레임 기다림
+        // 일일 퀘스트의 광고 시청 횟수는 보상을 실제로 받았을 때만 센다.
+        // (예전에는 광고가 준비되지 않아도 버튼만 누르면 올라갔다)
+        Data_Manager.m_Data.ADS++;
         _rewardCallback?.Invoke();
         _rewardCallback = null;
     }
