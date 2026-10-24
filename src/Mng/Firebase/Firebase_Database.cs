@@ -267,8 +267,7 @@ public partial class Firebase_Manager
                 if (!snapshot.Exists)
                 {
                     Debug.Log("[DEFAULT_DATA] 데이터 없음. 새로 생성");
-                    PlayerPrefs.DeleteAll();
-                    PlayerPrefs.Save();
+                    ClearDeviceProgressPrefs();
 
                     string now = Timer_NTP.ToSaveString(Timer_NTP.NowTime);
                     Data_Manager.m_Data = new Data
@@ -279,7 +278,9 @@ public partial class Firebase_Manager
                         EndDate = now,
                         Key = new int[] { 2, 2 },
                          DailyQuests = new bool[8], // 필수 초기화
-                        Achievement_B = new bool[Base_Manager.Quest.Achievement_Lists.Count]
+                        Achievement_B = new bool[Base_Manager.Quest.Achievement_Lists.Count],
+                        // 새 계정은 옮길 기기 기록이 없다. 다른 계정의 해금 기록이 섞이지 않게 처음부터 이전 완료로 둔다.
+                        Mastery_Migrated = true
                     };
 
                     Utils.SetLastSessionEnd(null);
@@ -468,6 +469,34 @@ public partial class Firebase_Manager
             Base_Manager.GPGS.Initialize();
         }
         Base_Manager.ADS.Init();
+    }
+
+    // 새 계정으로 시작할 때 이전 진행 기록이 남은 기기 저장값을 지운다.
+    // 예전에는 PlayerPrefs.DeleteAll()로 방금 저장한 로그인 유형까지 지워서
+    // 다음 실행 때 자동 로그인이 되지 않았고, 언어·음량·카메라 흔들림 설정도 초기화됐다.
+    private static readonly string[] DeviceSettingKeys = { "Login", "LOCAL", "BGM", "VFX", "CAM" };
+
+    private void ClearDeviceProgressPrefs()
+    {
+        var kept = new Dictionary<string, object>();
+        foreach (string key in DeviceSettingKeys)
+        {
+            if (!PlayerPrefs.HasKey(key)) continue;
+
+            if (key == "BGM" || key == "VFX") kept[key] = PlayerPrefs.GetFloat(key);
+            else if (key == "LOCAL") kept[key] = PlayerPrefs.GetString(key);
+            else kept[key] = PlayerPrefs.GetInt(key);
+        }
+
+        PlayerPrefs.DeleteAll();
+
+        foreach (var pair in kept)
+        {
+            if (pair.Value is float f) PlayerPrefs.SetFloat(pair.Key, f);
+            else if (pair.Value is string s) PlayerPrefs.SetString(pair.Key, s);
+            else PlayerPrefs.SetInt(pair.Key, (int)pair.Value);
+        }
+        PlayerPrefs.Save();
     }
 
     // 마지막 저장 이후 날짜가 바뀌었으면 일일 콘텐츠를 초기화한다. (사용자 기기 시간대 기준)
