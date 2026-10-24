@@ -25,13 +25,14 @@ public class Item_Manager
     {
 
         Base_Manager.Data.m_Set_Item[value] = Base_Manager.Data.m_Data_Item[item_name].Data;
+        Base_Manager.Player.Set_Relic_DefaultAbility(true, Base_Manager.Data.m_Set_Item[value]);
     }
 
     public void DisableItem(int value)
     {
-        // 캐릭터 제거 시 보너스 감소
-        Base_Manager.Player.Set_Relic_DefaultAbility(false, Base_Manager.Data.m_Set_Item[value]);
+        var item = Base_Manager.Data.m_Set_Item[value];
         Base_Manager.Data.m_Set_Item[value] = null;
+        Base_Manager.Player.Set_Relic_DefaultAbility(false, item);
     }
 
     public int LevelCount(Item_Holder holder)

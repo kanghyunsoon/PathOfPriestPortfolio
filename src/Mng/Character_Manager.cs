@@ -13,12 +13,9 @@ public class Character_Manager
 
     public void DisableCharacter(int value)
     {
-        // 캐릭터 제거 시 보너스 감소
-        Base_Manager.Player.Set_Character_DefaultAbility(false, Base_Manager.Data.m_Set_Character[value].Data);
-
+        var character = Base_Manager.Data.m_Set_Character[value];
         Base_Manager.Data.m_Set_Character[value] = null;
-
-
+        Base_Manager.Player.Set_Character_DefaultAbility(false, character != null ? character.Data : null);
     }
 
     public int LevelCount(Character_Holder holder)

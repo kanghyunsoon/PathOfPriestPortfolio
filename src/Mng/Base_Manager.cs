@@ -114,7 +114,6 @@ public class Base_Manager : MonoBehaviour
             Local.Init();
             m_Time.Init();
 
-            Invoke("InitializeDefaultAbilities", 1.0f);
             // StartCoroutine(ADCoroutine()); //광고 체크
 
 
@@ -131,24 +130,8 @@ public class Base_Manager : MonoBehaviour
 
     public void InitializeDefaultAbilities()
     {
-        // 캐릭터 기본 능력 적용
-        foreach (var characterHolder in Data.m_Set_Character)
-        {
-            if (characterHolder != null)
-            {
-                Debug.Log("1");
-                Player.Set_Character_DefaultAbility(true, characterHolder.Data);
-            }
-        }
-
-        // 아이템 기본 능력 적용
-        foreach (var itemScriptable in Data.m_Set_Item)
-        {
-            if (itemScriptable != null)
-            {
-                Player.Set_Relic_DefaultAbility(true, itemScriptable);
-            }
-        }
+        // 장착한 영웅·유물 보너스는 서버에서 장착 정보를 불러온 뒤 다시 계산한다.
+        Player.UpdateStats();
     }
 
     // 광고 체크 ↓ /////////////////////////////////////////////////////////////////////////////////
