@@ -14,6 +14,7 @@ public class Item_OBJ : MonoBehaviour
 
     Item_Scriptable m_Item;
     Rarity rarity;
+    bool m_Grant = true;
 
     bool isCheck = false;
 
@@ -47,13 +48,15 @@ public class Item_OBJ : MonoBehaviour
         // 이미 지급한 아이템이 절전 모드 진입 때 한 번 더 지급되지 않게 한다.
         UI_SavingMode.m_OnSaving -= OnSave;
 
-        Main_UI.instance.GetItem(m_Item);
-        Base_Manager.Inventory.GetItem(m_Item);
-
-
-        if(Base_Canvas.isSave)
+        if (m_Grant)
         {
-            Base_Canvas.instance.m_UI.GetComponent<UI_SavingMode>().GetItem(m_Item);
+            Main_UI.instance.GetItem(m_Item);
+            Base_Manager.Inventory.GetItem(m_Item);
+
+            if (Base_Canvas.isSave)
+            {
+                Base_Canvas.instance.m_UI.GetComponent<UI_SavingMode>().GetItem(m_Item);
+            }
         }
         yield return new WaitForSeconds(0.5f);
 
@@ -72,22 +75,27 @@ public class Item_OBJ : MonoBehaviour
 
     private void OnSave()
     {
-        Main_UI.instance.GetItem(m_Item);
-        Base_Manager.Inventory.GetItem(m_Item);
-        ItemTextRect.gameObject.SetActive(false);
-
-        if (Base_Canvas.isSave)
+        if (m_Grant)
         {
-            Base_Canvas.instance.m_UI.GetComponent<UI_SavingMode>().GetItem(m_Item);
+            Main_UI.instance.GetItem(m_Item);
+            Base_Manager.Inventory.GetItem(m_Item);
+
+            if (Base_Canvas.isSave)
+            {
+                Base_Canvas.instance.m_UI.GetComponent<UI_SavingMode>().GetItem(m_Item);
+            }
         }
+        ItemTextRect.gameObject.SetActive(false);
 
         Base_Manager.Pool.m_pool_Dictionary["Item_Obj"].Return(this.gameObject);
     }
 
-    public void Init(Vector3 pos, Item_Scriptable data)
+    // grant가 false면 이미 다른 곳에서 지급한 아이템의 획득 연출만 보여 준다.
+    public void Init(Vector3 pos, Item_Scriptable data, bool grant = true)
     {
         m_Item = data;
         rarity = m_Item.rarity;
+        m_Grant = grant;
 
         UI_SavingMode.m_OnSaving += OnSave;
 

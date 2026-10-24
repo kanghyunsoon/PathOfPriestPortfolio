@@ -48,10 +48,10 @@ public class UI_Upgrade_Item : UI_Base
 
     private void UpgradeLevel(Holder holder, ref int value)
     {
-        int realValue = (holder.Level + 1) * 5;
-        while (holder.Count >= realValue)
+        // 필요 개수는 레벨마다 늘어나므로 매번 다시 계산한다. 영웅 강화와 같은 방식이다.
+        while (holder.Count >= (holder.Level + 1) * 5)
         {
-            holder.Count -= realValue;
+            holder.Count -= (holder.Level + 1) * 5;
             holder.Level++;
         }
         value = holder.Level;

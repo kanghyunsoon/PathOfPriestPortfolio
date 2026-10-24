@@ -12,6 +12,7 @@ public class UI_Offline : UI_Base
     [SerializeField] private Transform Content;
     [SerializeField] private UI_Inventory_Part Item;
     Dictionary<string, Item_Holder> Items = new Dictionary<string, Item_Holder>();
+    bool collected = false;
 
     public override bool Init()
     {
@@ -62,12 +63,7 @@ public class UI_Offline : UI_Base
 
     public void CollectButton()
     {
-        Data_Manager.m_Data.Money += moneyValue;
-        foreach (var item in Items)
-        {
-            Base_Manager.Inventory.GetItem(item.Value.Data, item.Value.holder.Count);
-        }
-        Main_UI.instance.TextCheck();
+        GrantReward(1);
         DisableOBJ();
     }
 
@@ -75,20 +71,33 @@ public class UI_Offline : UI_Base
     {
         Base_Manager.ADS.ShowRewardedAds(() =>
         {
-            Data_Manager.m_Data.Money += (moneyValue * 2);
+            // 광고 콜백이 늦게 와서 창이 이미 닫혔으면 기본 보상만 받은 상태다.
+            if (this == null || collected) return;
 
-            foreach (var item in Items)
-            {
-                Base_Manager.Inventory.GetItem(item.Value.Data, item.Value.holder.Count * 2);
-            }
-            Main_UI.instance.TextCheck();
+            GrantReward(2);
             DisableOBJ();
         });
 
     }
 
+    private void GrantReward(int multiplier)
+    {
+        if (collected) return;
+        collected = true;
+
+        Data_Manager.m_Data.Money += moneyValue * multiplier;
+        foreach (var item in Items)
+        {
+            Base_Manager.Inventory.GetItem(item.Value.Data, item.Value.holder.Count * multiplier);
+        }
+        Main_UI.instance.TextCheck();
+    }
+
     public override void DisableOBJ()
     {
+        // 뒤로 가기로 닫아도 기본 보상은 지급한다. 오프라인 시간은 아래에서 비우므로 닫으면 보상이 사라졌다.
+        GrantReward(1);
+
         // 같은 오프라인 시간으로 보상을 두 번 받지 않도록 비운다.
         Utils.ConsumeOfflineTime();
 
@@ -97,13 +106,14 @@ public class UI_Offline : UI_Base
             value.GetComponent<COIN_PARENT>().Init(Vector3.zero, true);
         });
 
+        // 획득 연출만 보여 준다. 실제 지급은 위에서 끝났다.
         var Items = Base_Manager.Item.GetDropSet();
 
         for (int i = 0; i < Items.Count; i++)
         {
             Base_Manager.Pool.Pooling_OBJ("Item_Obj").Get((value) =>
             {
-                value.GetComponent<Item_OBJ>().Init(Vector3.zero, Items[i]);
+                value.GetComponent<Item_OBJ>().Init(Vector3.zero, Items[i], false);
             });
         }
 
